@@ -428,3 +428,105 @@
                 behavior: 'smooth'
             });
         }
+        function handleKey(char) {
+            if (!selectedElement) {
+                const label = document.getElementById('currentSelection');
+                label.classList.add('shake');
+                setTimeout(() => label.classList.remove('shake'), 300);
+                return;
+            }
+
+            const targetSym = selectedElement.s.toUpperCase();
+
+            if (currentInput.length < targetSym.length) {
+                currentInput += char;
+                updateInputDisplay();
+            }
+
+            if (currentInput.length === targetSym.length && targetSym.length === 1) {
+                checkAnswer();
+            }
+        }
+
+        function handleGlobalKeydown(event) {
+            if (document.getElementById('aiModal').classList.contains('hidden') === false) return;
+            if (document.getElementById('winModal').classList.contains('hidden') === false) return;
+
+            const key = event.key;
+
+            if (key.length === 1 && key.match(/[a-zA-Z]/)) {
+                event.preventDefault();
+                const char = key.toUpperCase();
+                handleKey(char);
+            }
+            else if (key === 'Backspace' || key === 'Delete') {
+                event.preventDefault();
+                clearInput();
+            }
+            else if (key === 'Enter') {
+                event.preventDefault();
+                checkAnswer();
+            }
+        }
+
+        function checkAnswer() {
+            if (!selectedElement) return;
+
+            const targetSym = selectedElement.s.toUpperCase();
+            const display = document.getElementById('inputDisplay');
+
+            if (currentInput === targetSym) {
+                playCorrect();
+
+                const block = document.getElementById(`block-${selectedElement.s}`);
+                const slot = document.getElementById(`slot-${selectedElement.s}`);
+
+                const slotRect = slot.getBoundingClientRect();
+                const containerRect = document.getElementById('blocksContainer').getBoundingClientRect();
+
+                const targetLeft = slotRect.left - containerRect.left;
+                const targetTop = slotRect.top - containerRect.top;
+
+                block.style.transform = 'rotate(0deg) scale(1)';
+                block.style.left = `${targetLeft}px`;
+                block.style.top = `${targetTop}px`;
+                block.style.width = `${slotRect.width}px`;
+                block.style.height = `${slotRect.height}px`;
+                block.classList.remove('selected');
+                block.classList.add('solved');
+
+                block.innerHTML = `
+                    <div class="flex flex-col items-center leading-none text-white">
+                        <span class="text-[10px] opacity-80">${selectedElement.z}</span>
+                        <span class="text-lg">${selectedElement.s}</span>
+                    </div>
+                `;
+
+                selectedElement = null;
+                currentInput = "";
+                updateInputDisplay();
+
+                document.getElementById('currentSelection').innerText =
+                    "✅ 歸位成功！請選下一個";
+                document.getElementById('currentSelection').style.color = "#10B981";
+
+                solvedCount++;
+                updateProgress();
+
+                if (solvedCount === totalCount) {
+                    setTimeout(() => {
+                        document.getElementById('winModal').classList.remove('hidden');
+                    }, 800);
+                }
+            }
+            else if (currentInput.length >= targetSym.length || currentInput.length > 0) {
+                playWrong();
+                display.classList.add('shake', 'text-red-600');
+
+                setTimeout(() => {
+                    display.classList.remove('shake', 'text-red-600');
+                    currentInput = "";
+                    updateInputDisplay();
+                }, 400);
+            }
+        }
