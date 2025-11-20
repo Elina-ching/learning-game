@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>元素城堡拼拼樂（國中版）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            background: #e0f2ff;
+            font-family: "Noto Sans TC", sans-serif;
+            user-select: none;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 960px;
+            height: 100vh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.15);
+        }
+
+        .table-wrapper {
+            position: relative;
+            overflow: auto;
+            flex-grow: 1;
+            background: radial-gradient(circle, #ffffff, #cfe8ff);
+        }
+
+        .periodic-grid {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 900px;
+            height: 450px;
+            display: grid;
+            grid-template-columns: repeat(18, 40px);
+            grid-template-rows: repeat(7, 40px);
+            gap: 3px;
+        }
+
+        .grid-cell {
+            border: 1px dashed #cbd5e1;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.55);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            color: #64748b;
+            position: relative;
+        }
+
+        .highlight {
+            background: #fde047 !important;
+            box-shadow: 0 0 10px #facc15;
+        }
+
+        .floating-block {
+            position: absolute;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-origin: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s, top 0.8s ease, left 0.8s ease;
+        }
+
+        .floating-block.selected {
+            outline: 3px solid #fbbf24;
+            box-shadow: 0 0 15px #fbbf24;
+            transform: scale(1.2);
+            z-index: 50;
+        }
+
+        .floating-block.solved {
+            border-radius: 3px;
+            transform: scale(1);
+            box-shadow: none;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .shake {
+            animation: shake 0.3s;
+        }
+        @keyframes shake {
+            20% { transform: translateX(-4px); }
+            40% { transform: translateX(4px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(3px); }
+        }
+    </style>
+</head>
+
+<body>
+  <!-- Level Buttons + Hint -->
+<div class="flex flex-wrap justify-center gap-4 p-4 bg-blue-50 border-b-4 border-blue-200">
+
+    <!-- 國中版 -->
+    <button
+        onclick="switchLevel('junior')"
+        class="px-5 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-full shadow">
+        🌱 國中元素
+    </button>
+
+    <!-- 高中版 -->
+    <button
+        onclick="switchLevel('senior')"
+        class="px-5 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-full shadow">
+        📘 高中元素
+    </button>
+
+    <!-- 全元素版 -->
+    <button
+        onclick="switchLevel('full')"
+        class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full shadow">
+        🏰 全元素城堡
+    </button>
+
+    <!-- 提示按鈕 -->
+    <button
+        onclick="giveHint()"
+        class="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-full shadow">
+        💡 提示
+    </button>
+</div>
+
+  <script>
+// --- 國中版 30 個元素 (依 108 課綱整理) ---
+const elements = [
+    {z:1,  s:'H',  n:'氫',  r:1, c:1,  color:'#ef4444'},
+    {z:2,  s:'He', n:'氦',  r:1, c:18, color:'#3b82f6'},
+
+    {z:3,  s:'Li', n:'鋰',  r:2, c:1,  color:'#f59e0b'},
+    {z:4,  s:'Be', n:'鈹',  r:2, c:2,  color:'#10b981'},
+    {z:5,  s:'B',  n:'硼',  r:2, c:13, color:'#8b5cf6'},
+    {z:6,  s:'C',  n:'碳',  r:2, c:14, color:'#6b7280'},
+    {z:7,  s:'N',  n:'氮',  r:2, c:15, color:'#ef4444'},
+    {z:8,  s:'O',  n:'氧',  r:2, c:16, color:'#ef4444'},
+    {z:9,  s:'F',  n:'氟',  r:2, c:17, color:'#fbbf24'},
+    {z:10, s:'Ne', n:'氖',  r:2, c:18, color:'#3b82f6'},
+
+    {z:11, s:'Na', n:'鈉',  r:3, c:1,  color:'#f59e0b'},
+    {z:12, s:'Mg', n:'鎂',  r:3, c:2,  color:'#10b981'},
+    {z:13, s:'Al', n:'鋁',  r:3, c:13, color:'#a78bfa'},
+    {z:14, s:'Si', n:'矽',  r:3, c:14, color:'#8b5cf6'},
+    {z:15, s:'P',  n:'磷',  r:3, c:15, color:'#fbbf24'},
+    {z:16, s:'S',  n:'硫',  r:3, c:16, color:'#fbbf24'},
+    {z:17, s:'Cl', n:'氯',  r:3, c:17, color:'#fbbf24'},
+    {z:18, s:'Ar', n:'氬',  r:3, c:18, color:'#3b82f6'},
+
+    {z:19, s:'K',  n:'鉀',  r:4, c:1,  color:'#f59e0b'},
+    {z:20, s:'Ca', n:'鈣',  r:4, c:2,  color:'#10b981'},
+
+    {z:26, s:'Fe', n:'鐵',  r:4, c:8,  color:'#9ca3af'},
+    {z:29, s:'Cu', n:'銅',  r:4, c:11, color:'#b45309'},
+    {z:30, s:'Zn', n:'鋅',  r:4, c:12, color:'#9ca3af'},
+    {z:35, s:'Br', n:'溴',  r:4, c:17, color:'#78350f'},
+
+    {z:47, s:'Ag', n:'銀',  r:5, c:11, color:'#e5e7eb'},
+    {z:53, s:'I',  n:'碘',  r:5, c:17, color:'#5b21b6'},
+
+    {z:79, s:'Au', n:'金',  r:6, c:11, color:'#f59e0b'},
+    {z:80, s:'Hg', n:'汞',  r:6, c:12, color:'#9ca3af'},
+];
+
+let selectedElement = null;
+let currentInput = "";
+let solved = 0;
+const total = elements.length;
+
+let correctSound, wrongSound;
+</script>
+<script>
+// --- 建立週期表格子 ---
+function initGrid() {
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+
+    for (let r = 1; r <= 7; r++) {
+        for (let c = 1; c <= 18; c++) {
+            const cell = document.createElement("div");
+            cell.className = "castle-cell";
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+
+            // 找該格是否有元素
+            const el = elements.find(e => e.r === r && e.c === c);
+
+            if (el) {
+                cell.id = `slot-${el.s}`;
+                cell.innerHTML = `
+                    <div class="castle-label">
+                        <span class="num">${el.z}</span>
+                        <span class="symbol">${el.s}</span>
+                    </div>
+                `;
+            } else {
+                // 不在國中 30 個元素的空格
+                cell.style.opacity = 0.08;
+            }
+
+            grid.appendChild(cell);
+        }
+    }
+}
+
+// --- 建立散落的拼圖方塊 ---
+function initBlocks() {
+    const box = document.getElementById("pieces");
+    box.innerHTML = "";
+
+    const area = document.getElementById("gameArea");
+    const W = area.clientWidth - 120;
+    const H = area.clientHeight - 120;
+
+    elements.forEach(el => {
+        const card = document.createElement("div");
+        card.className = "piece";
+        card.id = `piece-${el.s}`;
+        card.style.backgroundColor = el.color;
+        card.innerHTML = `
+            <div class="piece-inner">
+                <span class="pz-num">${el.z}</span>
+                <span class="pz-name">${el.n}</span>
+            </div>
+        `;
+
+        // 隨機位置
+        const tx = Math.random() * W + 20;
+        const ty = Math.random() * H + 20;
+        card.style.transform = `translate(${tx}px, ${ty}px) rotate(${(Math.random()*14-7)}deg)`;
+
+        // 點擊選取
+        card.addEventListener("click", () => selectPiece(el, card));
+
+        box.appendChild(card);
+    });
+}
+</script>
+/**********************
+ * 4. 互動邏輯：選取／輸入／判定
+ **********************/
+
+let selected = null;       // 被選取的拼圖資料（元素物件）
+let currentInput = "";     // 玩家輸入的符號
+let solvedCount = 0;       // 已完成數
+
+// --- 點選拼圖 ---
+function selectPiece(el, dom) {
+    if (dom.classList.contains("solved")) return;
+
+    // 清除其他選取
+    document.querySelectorAll(".floating-block.selected")
+        .forEach(b => b.classList.remove("selected"));
+
+    selected = el;
+    currentInput = "";
+
+    dom.classList.add("selected");
+
+    // UI 更新
+    document.getElementById("currentSelection").innerText =
+        `${el.n}（${el.z}）`;
+    document.getElementById("currentSelection").style.color = el.color;
+
+    updateInputDisplay();
+}
+
+// --- 每輸入一個字母 ---
+function handleKey(char) {
+    if (!selected) return;
+
+    const target = selected.s.toUpperCase();
+
+    if (currentInput.length < target.length) {
+        currentInput += char;
+        updateInputDisplay();
+    }
+
+    // 若符號只有 1 字母 → 自動判定
+    if (currentInput.length === target.length && target.length === 1) {
+        checkAnswer();
+    }
+}
+
+// --- 鍵盤事件 ---
+document.addEventListener("keydown", e => {
+    const k = e.key;
+
+    if (k.match(/^[a-zA-Z]$/)) {
+        e.preventDefault();
+        handleKey(k.toUpperCase());
+    }
+
+    if (k === "Backspace" || k === "Delete") {
+        e.preventDefault();
+        clearInput();
+    }
+
+    if (k === "Enter") {
+        e.preventDefault();
+        checkAnswer();
+    }
+});
+
+// --- 顯示輸入 ---
+function updateInputDisplay() {
+    const box = document.getElementById("inputDisplay");
+    const len = selected ? selected.s.length : 1;
+
+    let str = currentInput.padEnd(len, "_");
+    box.innerText = str.split("").join(" ");
+}
+
+// --- 清除 ---
+function clearInput() {
+    currentInput = "";
+    updateInputDisplay();
+}
+
+// --- 判定答案 ---
+function checkAnswer() {
+    if (!selected) return;
+
+    const target = selected.s.toUpperCase();
+    const box = document.getElementById("inputDisplay");
+
+    if (currentInput === target) {
+        // ✔ 正確
+        playCorrect();
+
+        const block = document.getElementById(`block-${selected.s}`);
+        const slot = document.getElementById(`slot-${selected.s}`);
+
+        const r1 = slot.getBoundingClientRect();
+        const r2 = document.getElementById("blocksContainer").getBoundingClientRect();
+
+        const targetLeft = r1.left - r2.left;
+        const targetTop = r1.top - r2.top;
+
+        block.style.left = `${targetLeft}px`;
+        block.style.top = `${targetTop}px`;
+        block.style.transform = "rotate(0deg) scale(1)";
+        block.classList.remove("selected");
+        block.classList.add("solved");
+
+        block.innerHTML = `
+            <div class="flex flex-col items-center text-white leading-none">
+                <span class="text-[10px] opacity-80">${selected.z}</span>
+                <span class="text-lg">${selected.s}</span>
+            </div>
+        `;
+
+        selected = null;
+        currentInput = "";
+        updateInputDisplay();
+
+        solvedCount++;
+        updateProgress();
+
+        if (solvedCount === elements.length) {
+            setTimeout(() => {
+                document.getElementById("winModal").classList.remove("hidden");
+            }, 800);
+        }
+    } else {
+        // ❌ 錯誤
+        playWrong();
+        box.classList.add("shake", "text-red-600");
+
+        setTimeout(() => {
+            box.classList.remove("shake", "text-red-600");
+            currentInput = "";
+            updateInputDisplay();
+        }, 400);
+    }
+}
+/**********************
+ * 5. 進度、提示、版本切換
+ **********************/
+
+// --- 更新進度 ---
+function updateProgress() {
+    document.getElementById("progressDisplay").innerText =
+        `${solvedCount}/${elements.length}`;
+}
+
+// --- 簡單提示：讓對應格子亮起來 ---
+function giveHint() {
+    if (!selected) return;
+
+    const slot = document.getElementById(`slot-${selected.s}`);
+    slot.classList.add("bg-yellow-300");
+
+    // 3 秒後自動關掉高亮
+    setTimeout(() => {
+        slot.classList.remove("bg-yellow-300");
+    }, 3000);
+}
+
+// --- 國中、 高中、 全元素版本 ---
+const juniorElements = elements.filter(e => e.z <= 20);
+const seniorElements = elements.filter(e => e.z <= 36); // 高中可到 Kr 附近
+const fullElements = elements; // 全部
+
+function switchLevel(level) {
+    let list;
+
+    if (level === "junior") list = juniorElements;
+    else if (level === "senior") list = seniorElements;
+    else list = fullElements;
+
+    // 清除舊資料
+    const grid = document.getElementById("ghostGrid");
+    const blocks = document.getElementById("blocksContainer");
+    grid.innerHTML = "";
+    blocks.innerHTML = "";
+
+    // 更新全域變數
+    elements.length = 0;
+    list.forEach(e => elements.push(e));
+
+    solvedCount = 0;
+    updateProgress();
+
+    // 重新渲染
+    initGrid();
+    initBlocks();
+}
+
+// --- 過關 Modal ---
+function showWin() {
+    document.getElementById("winModal").classList.remove("hidden");
+}
+
