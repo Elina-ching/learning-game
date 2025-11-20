@@ -783,19 +783,7 @@ function askAIHint() {
   showAiModal(hint, false);
 }
 
-      showAiModal(null, true);
-
-      const prompt = `請針對目前選定的元素：「${target.n} (${target.s})」，原子序是 ${target.z}。給一個簡短、幽默、生活化的記憶點，幫助我記住它的英文符號，務必在50字內，用繁體中文。`;
-
-      const result = await callGeminiAPI(prompt);
-      const finalHtml =
-        `**妳選的是「${target.n} (${target.s})」原子序 ${target.z} 喔！**\n\n` +
-        result;
-
-      showAiModal(finalHtml, false);
-    }
-
-function showAiModal(content, isLoading) {
+  function showAiModal(content, isLoading) {
   const modal = document.getElementById("aiModal");
   const contentDiv = document.getElementById("aiContent");
   const loadingDiv = document.getElementById("aiLoading");
