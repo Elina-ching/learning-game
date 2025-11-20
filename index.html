@@ -530,3 +530,127 @@
                 }, 400);
             }
         }
+        function clearInput() {
+            currentInput = "";
+            updateInputDisplay();
+        }
+
+        function updateInputDisplay() {
+            const display = document.getElementById('inputDisplay');
+            const targetLen = selectedElement ? selectedElement.s.length : 1;
+            let displayString = currentInput.padEnd(targetLen, '_');
+
+            if (selectedElement) {
+                const targetSym = selectedElement.s.toUpperCase();
+                if (targetSym.startsWith(currentInput)) {
+                    display.classList.remove('text-red-500');
+                    display.classList.add('text-slate-800');
+                } else {
+                    display.classList.add('text-red-500');
+                    display.classList.remove('text-slate-800');
+                }
+            } else {
+                display.classList.remove('text-red-500', 'text-slate-800');
+                display.classList.add('text-blue-600');
+            }
+
+            display.innerText = displayString.split('').join(' ');
+        }
+
+        function updateProgress() {
+            document.getElementById('progressDisplay').innerText =
+                `${solvedCount}/${totalCount}`;
+        }
+
+        // --- Gemini AI ---
+        async function callGeminiAPI(prompt) {
+            const url =
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const systemPrompt =
+                "你是一位幽默風趣、擅長用生活化比喻的化學小老師，專門給國高中生提供學習提示。請務必用繁體中文、親切的語氣、50字內。";
+
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                            tools: [{ "google_search": {} }]
+                        })
+                    });
+
+                    if (!response.ok)
+                        throw new Error(`API failed: ${response.status}`);
+
+                    const data = await response.json();
+                    const text =
+                        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+                        "小老師在想提示，但訊號有點卡！";
+
+                    return text;
+
+                } catch (e) {
+                    console.error(`Attempt ${i + 1} failed`, e);
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+
+            return "小老師去喝清心了，等一下再來！(API 壞掉了)";
+        }
+
+        async function askAIHint() {
+            let target = selectedElement;
+
+            if (!target) {
+                const unsolved = elements.filter(e => {
+                    const block = document.getElementById(`block-${e.s}`);
+                    return block && !block.classList.contains('solved');
+                });
+
+                if (unsolved.length === 0) {
+                    showAiModal("妳都破完了啦！去玩下一局！", false);
+                    return;
+                }
+
+                target = unsolved[Math.floor(Math.random() * unsolved.length)];
+                const block = document.getElementById(`block-${target.s}`);
+                if (block) selectBlock(target, block);
+            }
+
+            showAiModal(null, true);
+
+            const prompt =
+                `請針對元素「${target.n} (${target.s})」，原子序 ${target.z}，給我幽默又好記的符號記憶法，50字內。`;
+
+            const result = await callGeminiAPI(prompt);
+
+            const html =
+                `**妳選的是「${target.n} (${target.s})」原子序 ${target.z} 喔！**<br><br>` +
+                result;
+
+            showAiModal(html, false);
+        }
+
+        function showAiModal(content, isLoading) {
+            const modal = document.getElementById('aiModal');
+            const contentDiv = document.getElementById('aiContent');
+            const loadingDiv = document.getElementById('aiLoading');
+
+            modal.classList.remove('hidden');
+
+            if (isLoading) {
+                contentDiv.classList.add('hidden');
+                loadingDiv.classList.remove('hidden');
+            } else {
+                contentDiv.classList.remove('hidden');
+                loadingDiv.classList.add('hidden');
+                contentDiv.innerHTML = marked.parse(content);
+            }
+        }
+
+        function closeAiModal() {
+            document.getElementById('aiModal').classList.add('hidden');
+        }
