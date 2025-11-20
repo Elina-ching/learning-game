@@ -748,22 +748,39 @@
       return "小老師去補貨清心了，晚點再來試一次吧！";
     }
 
-    async function askAIHint() {
-      let target = selectedElement;
+   // ===== 本地版 AI 提示（不連網、不用 API、不花額度） =====
+function askAIHint() {
+  let target = selectedElement;
 
-      if (!target) {
-        const unsolved = elements.filter((e) => {
-          const b = document.getElementById(`block-${e.s}`);
-          return b && !b.classList.contains("solved");
-        });
-        if (unsolved.length === 0) {
-          showAiModal("妳已經全部通關囉，直接去選其他版本挑戰吧！", false);
-          return;
-        }
-        target = unsolved[Math.floor(Math.random() * unsolved.length)];
-        const b = document.getElementById(`block-${target.s}`);
-        if (b) selectBlock(target, b);
-      }
+  // 若還沒選擇，就隨機挑一個未完成的並跳過去
+  if (!target) {
+    const unsolved = elements.filter(e => {
+      const b = document.getElementById(`block-${e.s}`);
+      return b && !b.classList.contains("solved");
+    });
+
+    if (unsolved.length === 0) {
+      showAiModal("妳已經全部拼好了！太強啦～ 🌟", false);
+      return;
+    }
+
+    target = unsolved[Math.floor(Math.random() * unsolved.length)];
+    const b = document.getElementById(`block-${target.s}`);
+    if (b) selectBlock(target, b);
+  }
+
+  // ===== 顯示提示內容（高手版） =====
+  const hint = `
+    <p class="text-base leading-relaxed">
+      👋 小提示來囉！<br><br>
+      妳選到的元素是：<strong class="text-blue-700 text-lg">${target.n}</strong><br>
+      他的原子序是：<strong class="text-green-600 text-lg">${target.z}</strong><br><br>
+      再看一下位置，就能把它放回正確的城堡房間囉！
+    </p>
+  `;
+
+  showAiModal(hint, false);
+}
 
       showAiModal(null, true);
 
@@ -777,23 +794,24 @@
       showAiModal(finalHtml, false);
     }
 
-    function showAiModal(content, isLoading) {
-      const modal = document.getElementById("aiModal");
-      const contentDiv = document.getElementById("aiContent");
-      const loadingDiv = document.getElementById("aiLoading");
+function showAiModal(content, isLoading) {
+  const modal = document.getElementById("aiModal");
+  const contentDiv = document.getElementById("aiContent");
+  const loadingDiv = document.getElementById("aiLoading");
 
-      modal.classList.remove("hidden");
+  modal.classList.remove("hidden");
 
-      if (isLoading) {
-        contentDiv.classList.add("hidden");
-        loadingDiv.classList.remove("hidden");
-        contentDiv.innerHTML = "";
-      } else {
-        contentDiv.classList.remove("hidden");
-        loadingDiv.classList.add("hidden");
-        contentDiv.innerHTML = marked.parse(content);
-      }
-    }
+  if (isLoading) {
+    contentDiv.classList.add("hidden");
+    loadingDiv.classList.remove("hidden");
+    contentDiv.innerHTML = "";
+  } else {
+    contentDiv.classList.remove("hidden");
+    loadingDiv.classList.add("hidden");
+    contentDiv.innerHTML = content;
+  }
+}
+
 
     function closeAiModal() {
       document.getElementById("aiModal").classList.add("hidden");
