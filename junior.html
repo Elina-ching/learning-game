@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>元素城堡拼拼樂｜國中版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: "Noto Sans TC", sans-serif;
+            background: #f0f9ff;
+        }
+        .grid { user-select:none; }
+        .floating { cursor:pointer; }
+    </style>
+</head>
+<body>
+    <div class="text-center p-6 bg-blue-600 text-white shadow">
+        <h1 class="text-3xl font-bold">元素城堡拼拼樂｜國中版</h1>
+        <p class="text-blue-100 text-sm mt-1">江江與高手攜手打造｜國中 108 課綱 24 個元素</p>
+    </div>
+
+    <div id="game-area" class="relative p-4">
+        <div id="grid" class="grid grid-cols-9 gap-2 max-w-lg mx-auto"></div>
+        <div id="blocks" class="absolute inset-0"></div>
+    </div>
+<script>
+const elements = [
+    {z:1, s:"H",  n:"氫"},
+    {z:2, s:"He", n:"氦"},
+    {z:7, s:"N",  n:"氮"},
+    {z:8, s:"O",  n:"氧"},
+    {z:10, s:"Ne", n:"氖"},
+    {z:18, s:"Ar", n:"氬"},
+
+    {z:3, s:"Li", n:"鋰"},
+    {z:11, s:"Na", n:"鈉"},
+    {z:19, s:"K",  n:"鉀"},
+    {z:4, s:"Be", n:"鈹"},
+    {z:12, s:"Mg", n:"鎂"},
+    {z:20, s:"Ca", n:"鈣"},
+
+    {z:6, s:"C",  n:"碳"},
+    {z:14, s:"Si", n:"矽"},
+    {z:13, s:"Al", n:"鋁"},
+    {z:26, s:"Fe", n:"鐵"},
+    {z:29, s:"Cu", n:"銅"},
+    {z:30, s:"Zn", n:"鋅"},
+
+    {z:9, s:"F",  n:"氟"},
+    {z:17, s:"Cl", n:"氯"},
+    {z:35, s:"Br", n:"溴"},
+    {z:53, s:"I",  n:"碘"}
+];
+function initGrid() {
+    const g = document.getElementById("grid");
+    elements.forEach(el=>{
+        let cell = document.createElement("div");
+        cell.id = "slot-" + el.s;
+        cell.className = "border border-blue-200 p-3 h-16 flex flex-col justify-center items-center text-gray-500";
+        cell.innerHTML = `<div class='text-xs opacity-60'>${el.z}</div>${el.s}`;
+        g.appendChild(cell);
+    });
+}
+function initBlocks() {
+    const b = document.getElementById("blocks");
+    elements.forEach(el=>{
+        let blk = document.createElement("div");
+        blk.className = "floating absolute bg-blue-400 text-white font-bold p-3 rounded shadow";
+        blk.id = "blk-" + el.s;
+        blk.textContent = el.n;
+        blk.style.left = Math.random()*250 + "px";
+        blk.style.top = Math.random()*300 + "px";
+
+        blk.onclick = ()=> selectBlock(el);
+        b.appendChild(blk);
+    });
+}
+
+let current = null;
+
+function selectBlock(el) {
+    current = el;
+    checkMatch();
+}
+function checkMatch() {
+    if (!current) return;
+    const slot = document.getElementById("slot-" + current.s);
+    const blk  = document.getElementById("blk-" + current.s);
+
+    const rect = slot.getBoundingClientRect();
+    blk.style.left = rect.left + "px";
+    blk.style.top  = rect.top + "px";
+    blk.style.position = "fixed";
+    blk.style.background = "#10b981";
+    blk.style.cursor="default";
+
+    blk.onclick = null;
+}
+
+window.onload = ()=>{ initGrid(); initBlocks(); }
+</script>
+</body>
+</html>
