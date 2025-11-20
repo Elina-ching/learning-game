@@ -237,3 +237,86 @@
             </button>
         </div>
     </div>
+    <script>
+        // --- Data ---
+        const elements = [
+            // Period 1
+            {z:1, s:'H', n:'氫', r:1, c:1, color:'#EF4444'}, // 非金屬
+            {z:2, s:'He', n:'氦', r:1, c:18, color:'#3B82F6'}, // 惰性氣體
+            // Period 2
+            {z:3, s:'Li', n:'鋰', r:2, c:1, color:'#F59E0B'}, // 鹼金屬
+            {z:4, s:'Be', n:'鈹', r:2, c:2, color:'#10B981'}, // 鹼土金屬
+            {z:5, s:'B', n:'硼', r:2, c:13, color:'#8B5CF6'}, // 類金屬
+            {z:6, s:'C', n:'碳', r:2, c:14, color:'#6B7280'}, // 非金屬
+            {z:7, s:'N', n:'氮', r:2, c:15, color:'#EF4444'}, // 非金屬
+            {z:8, s:'O', n:'氧', r:2, c:16, color:'#EF4444'}, // 非金屬
+            {z:9, s:'F', n:'氟', r:2, c:17, color:'#FCD34D'}, // 鹵素
+            {z:10, s:'Ne', n:'氖', r:2, c:18, color:'#3B82F6'}, // 惰性氣體
+            // Period 3
+            {z:11, s:'Na', n:'鈉', r:3, c:1, color:'#F59E0B'},
+            {z:12, s:'Mg', n:'鎂', r:3, c:2, color:'#10B981'},
+            {z:13, s:'Al', n:'鋁', r:3, c:13, color:'#A78BFA'}, 
+            {z:14, s:'Si', n:'矽', r:3, c:14, color:'#8B5CF6'},
+            {z:15, s:'P', n:'磷', r:3, c:15, color:'#FCD34D'},
+            {z:16, s:'S', n:'硫', r:3, c:16, color:'#FCD34D'},
+            {z:17, s:'Cl', n:'氯', r:3, c:17, color:'#FCD34D'},
+            {z:18, s:'Ar', n:'氬', r:3, c:18, color:'#3B82F6'},
+            // Period 4 common
+            {z:19, s:'K', n:'鉀', r:4, c:1, color:'#F59E0B'},
+            {z:20, s:'Ca', n:'鈣', r:4, c:2, color:'#10B981'},
+            // 過渡金屬（簡化）
+            {z:26, s:'Fe', n:'鐵', r:4, c:8, color:'#9CA3AF'},
+            {z:29, s:'Cu', n:'銅', r:4, c:11, color:'#B45309'},
+            {z:30, s:'Zn', n:'鋅', r:4, c:12, color:'#9CA3AF'},
+            {z:35, s:'Br', n:'溴', r:4, c:17, color:'#78350F'},
+            // others
+            {z:47, s:'Ag', n:'銀', r:5, c:11, color:'#E5E7EB'},
+            {z:53, s:'I',  n:'碘', r:5, c:17, color:'#5B21B6'},
+            {z:79, s:'Au', n:'金', r:6, c:11, color:'#F59E0B'},
+            {z:80, s:'Hg', n:'汞', r:6, c:12, color:'#9CA3AF'},
+        ];
+
+        // --- State ---
+        let selectedElement = null;
+        let currentInput = "";
+        let solvedCount = 0;
+        const totalCount = elements.length;
+        const apiKey = ""; //（留著讓 Gemini 可用）
+
+        // --- Audio State ---
+        let correctSynth, wrongSynth;
+
+        // --- Init ---
+        window.onload = () => {
+            setTimeout(() => {
+                initGrid();
+                initBlocks();
+                initAudio(); 
+                updateProgress();
+            }, 100);
+
+            document.addEventListener('keydown', handleGlobalKeydown);
+        };
+
+        function initAudio() {
+            if (Tone.context.state !== 'running') {
+                const startAudio = () => {
+                    Tone.start().then(() => {
+                        document.documentElement.removeEventListener('mousedown', startAudio);
+                        document.documentElement.removeEventListener('touchstart', startAudio);
+                    });
+                };
+                document.documentElement.addEventListener('mousedown', startAudio, { once: true });
+                document.documentElement.addEventListener('touchstart', startAudio, { once: true });
+            }
+
+            correctSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.5 }
+            }).toDestination();
+
+            wrongSynth = new Tone.NoiseSynth({
+                noise: { type: 'pink' },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
+            }).toDestination();
+        }
