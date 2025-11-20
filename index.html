@@ -320,3 +320,111 @@
                 envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 }
             }).toDestination();
         }
+        function initGrid() {
+            const grid = document.getElementById('ghostGrid');
+            const gridWidth = 900;
+            const gridHeight = 450;
+
+            grid.style.width = `${gridWidth}px`;
+            grid.style.height = `${gridHeight}px`;
+
+            for(let r=1; r<=7; r++) {
+                for(let c=1; c<=18; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    const el = elements.find(e => e.r === r && e.c === c);
+
+                    if (el) {
+                        cell.innerHTML = `
+                            <span class="text-[8px] absolute top-1 left-1">${el.z}</span>
+                            <span class="text-base text-gray-400">${el.s}</span>
+                        `;
+                        cell.id = `slot-${el.s}`;
+                    } else if (r === 6 && c >= 3 && c <= 10) {
+                        cell.innerHTML = '57-71';
+                    } else if (r === 7 && c >= 3 && c <= 10) {
+                        cell.innerHTML = '89-103';
+                    } else {
+                        cell.style.visibility = 'hidden';
+                    }
+
+                    grid.appendChild(cell);
+                }
+            }
+
+            const blockContainer = document.getElementById('blocksContainer');
+            blockContainer.style.width = `${gridWidth}px`;
+            blockContainer.style.height = `${gridHeight}px`;
+        }
+
+        function initBlocks() {
+            const container = document.getElementById('blocksContainer');
+            const containerWidth = 900;
+            const containerHeight = 450;
+            const blockPadding = 50;
+
+            elements.forEach(el => {
+                const block = document.createElement('div');
+                block.className = 'floating-block pointer-events-auto';
+                block.innerText = el.n;
+                block.style.backgroundColor = el.color;
+                block.id = `block-${el.s}`;
+
+                const randTop = Math.random() * (containerHeight - blockPadding) + 20;
+                const randLeft = Math.random() * (containerWidth - blockPadding) + 20;
+
+                block.style.top = `${randTop}px`;
+                block.style.left = `${randLeft}px`;
+
+                const randRot = Math.random() * 30 - 15;
+                block.style.transform = `rotate(${randRot}deg)`;
+
+                block.onclick = (e) => selectBlock(el, block, e);
+
+                container.appendChild(block);
+            });
+        }
+
+        function selectBlock(elData, blockDom) {
+            if (blockDom.classList.contains('solved')) return;
+
+            document.querySelectorAll('.floating-block.selected')
+                .forEach(b => b.classList.remove('selected'));
+
+            selectedElement = elData;
+            currentInput = "";
+            blockDom.classList.add('selected');
+
+            document.getElementById('currentSelection').innerText =
+                `${elData.n} (${elData.z})`;
+
+            document.getElementById('currentSelection').style.color = elData.color;
+            updateInputDisplay();
+
+            blockDom.style.zIndex = 100;
+
+            const tableWrapper = document.getElementById('tableArea');
+            const blockRect = blockDom.getBoundingClientRect();
+            const containerRect = tableWrapper.getBoundingClientRect();
+
+            const scrollLeft =
+                blockRect.left - containerRect.left +
+                tableWrapper.scrollLeft -
+                containerRect.width / 2 +
+                blockRect.width / 2;
+
+            const scrollTop =
+                blockRect.top - containerRect.top +
+                tableWrapper.scrollTop -
+                containerRect.height / 2 +
+                blockRect.height / 2;
+
+            tableWrapper.scrollTo({
+                left: scrollLeft,
+                top: scrollTop,
+                behavior: 'smooth'
+            });
+        }
