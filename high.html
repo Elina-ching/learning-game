@@ -2,774 +2,324 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>元素城堡拼拼樂｜高中版</title>
-
-  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Tone.js 音效 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
-
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap");
-
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: "Noto Sans TC", sans-serif;
       background-color: #e0f2fe;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-
+      margin: 0; padding: 0;
+      display: flex; justify-content: center;
+      touch-action: manipulation;
       overflow: hidden;
+      position: fixed; width: 100%; height: 100%;
     }
-
     #game-container {
-      max-width: 960px;
-      width: 100%;
-      height: 100vh;
+      max-width: 960px; width: 100%; height: 100%;
       background: #f9fafb;
-      box-shadow: 0 0 25px rgba(15, 23, 42, 0.18);
-      display: flex;
-      flex-direction: column;
+      box-shadow: 0 0 25px rgba(15,23,42,0.18);
+      display: flex; flex-direction: column;
     }
-
-    /* ===== 週期表格子 ===== */
     .table-wrapper {
-      position: relative;
-      flex-grow: 1;
-      overflow: auto;
-      padding: 16px;
+      position: relative; flex-grow: 1;
+      overflow: auto; -webkit-overflow-scrolling: touch;
+      padding: 8px;
       background: radial-gradient(circle at top, #ffffff 0%, #dbeafe 45%, #bfdbfe 100%);
       border-bottom: 4px solid #93c5fd;
     }
-
     .periodic-grid {
       display: grid;
       grid-template-columns: repeat(18, 1fr);
       grid-template-rows: repeat(7, 1fr);
       gap: 2px;
-      width: 900px;
-      height: 450px;
+      width: 720px; height: 360px;
       pointer-events: none;
-      position: absolute;
-      inset: 0;
-      margin: auto;
+      position: absolute; inset: 0; margin: auto;
     }
-
     .grid-cell {
-      border: 1px dashed rgba(148, 163, 184, 0.5);
-      background-color: rgba(255, 255, 255, 0.7);
+      border: 1px dashed rgba(148,163,184,0.5);
+      background-color: rgba(255,255,255,0.7);
       border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      color: #94a3b8;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; color: #94a3b8;
       position: relative;
     }
-
-    .grid-cell span.z {
-      position: absolute;
-      top: 2px;
-      left: 4px;
-      font-size: 9px;
-      opacity: 0.7;
-    }
-
-    .grid-cell span.sym {
-      font-size: 14px;
-      color: #cbd5f5;
-    }
-
-    /* ===== 漂浮元素卡片 ===== */
+    .grid-cell span.z { position: absolute; top: 1px; left: 2px; font-size: 7px; opacity: 0.7; }
+    .grid-cell span.sym { font-size: 11px; color: #cbd5f5; }
     .floating-block {
       position: absolute;
-      width: 52px;
-      height: 52px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 20px;
-      color: #ffffff;
-      box-shadow: 0 10px 16px rgba(15, 23, 42, 0.25);
-      cursor: pointer;
-      user-select: none;
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: #fff;
+      box-shadow: 0 6px 12px rgba(15,23,42,0.25);
+      cursor: pointer; user-select: none;
       transition: transform 0.18s, box-shadow 0.18s,
-        top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
-        left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+        top 0.5s cubic-bezier(0.34,1.56,0.64,1),
+        left 0.5s cubic-bezier(0.34,1.56,0.64,1),
         width 0.3s ease, height 0.3s ease;
       z-index: 10;
     }
-
-    .floating-block:active {
-      transform: translateY(2px) scale(0.97);
-      box-shadow: 0 6px 12px rgba(15, 23, 42, 0.18);
-    }
-
+    .floating-block:active { transform: translateY(2px) scale(0.97); box-shadow: 0 4px 10px rgba(15,23,42,0.18); }
     .floating-block.selected {
       border: 3px solid #facc15;
-      box-shadow: 0 0 20px rgba(250, 204, 21, 0.95);
-      transform: scale(1.16) rotate(0deg);
-      z-index: 40;
+      box-shadow: 0 0 18px rgba(250,204,21,0.95);
+      transform: scale(1.14); z-index: 40;
     }
-
     .floating-block.solved {
       border-radius: 4px;
-      box-shadow: inset 0 0 6px rgba(15, 23, 42, 0.35);
-      pointer-events: none;
-      z-index: 5;
+      box-shadow: inset 0 0 6px rgba(15,23,42,0.35);
+      pointer-events: none; z-index: 5;
     }
-
-    /* ===== shake 錯誤動畫 ===== */
-    @keyframes shake {
-      0%, 100% {
-        transform: translateX(0);
-      }
-      20%, 60% {
-        transform: translateX(-5px);
-      }
-      40%, 80% {
-        transform: translateX(5px);
-      }
+    #mainInput {
+      background: #f1f5f9; border: 3px solid #3b82f6;
+      border-radius: 12px; padding: 8px 16px;
+      font-size: 28px; font-family: monospace; font-weight: 700;
+      letter-spacing: 0.5em; text-align: center;
+      min-width: 100px; max-width: 140px;
+      color: #1e293b; caret-color: #3b82f6;
+      text-transform: uppercase;
     }
-
-    .shake {
-      animation: shake 0.24s ease-in-out;
-    }
-
-    /* AI loading 小點點（給未來用，現在沒用到也可以留著） */
+    #mainInput:focus { outline: none; border-color: #facc15; box-shadow: 0 0 12px rgba(250,204,21,0.5); }
+    #mainInput::placeholder { color: #94a3b8; letter-spacing: 0.3em; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
+    .shake { animation: shake 0.24s ease-in-out; }
     .dot-flashing {
-      position: relative;
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background-color: #2563eb;
-      animation: dot-flashing 1s infinite linear alternate;
-      animation-delay: 0.5s;
+      position: relative; width: 10px; height: 10px;
+      border-radius: 999px; background-color: #2563eb;
+      animation: dot-flashing 1s infinite linear alternate; animation-delay: 0.5s;
     }
-    .dot-flashing::before,
-    .dot-flashing::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background-color: #2563eb;
+    .dot-flashing::before, .dot-flashing::after {
+      content: ""; position: absolute; top: 0;
+      width: 10px; height: 10px; border-radius: 999px; background-color: #2563eb;
     }
-    .dot-flashing::before {
-      left: -15px;
-      animation: dot-flashing 1s infinite alternate;
-      animation-delay: 0s;
-    }
-    .dot-flashing::after {
-      left: 15px;
-      animation: dot-flashing 1s infinite alternate;
-      animation-delay: 1s;
-    }
-    @keyframes dot-flashing {
-      0% { background-color: #2563eb; }
-      50%,100% { background-color: rgba(37,99,235,0.2); }
+    .dot-flashing::before { left: -15px; animation: dot-flashing 1s infinite alternate; animation-delay: 0s; }
+    .dot-flashing::after { left: 15px; animation: dot-flashing 1s infinite alternate; animation-delay: 1s; }
+    @keyframes dot-flashing { 0%{background-color:#2563eb} 50%,100%{background-color:rgba(37,99,235,0.2)} }
+    @media (max-width: 600px) {
+      .periodic-grid, #blocksContainer { width: 540px; height: 270px; }
+      .floating-block { width: 28px; height: 28px; font-size: 10px; border-radius: 6px; }
+      #mainInput { font-size: 22px; padding: 6px 12px; min-width: 80px; }
     }
   </style>
 </head>
-<body class="bg-sky-200">
+<body>
   <div id="game-container">
-    <!-- 頂端標題列 -->
-    <header
-      class="bg-blue-600 text-white px-5 py-4 flex items-center justify-between shadow-md"
-    >
+    <header class="bg-indigo-600 text-white px-4 py-3 flex items-center justify-between shadow-md">
       <div>
-        <h1 class="text-xl md:text-2xl font-extrabold flex items-center gap-2">
-          <span>🏰</span>
-          <span>元素城堡拼拼樂｜高中版</span>
-        </h1>
-        <p class="text-xs md:text-sm text-blue-100 mt-1">
-          江江與高手攜手打造｜高中課綱常見 65 個元素
-        </p>
-        <p class="text-[11px] md:text-xs text-blue-100">
-          點選元素 → 用鍵盤輸入符號 → 按 Enter 確認！
-        </p>
+        <h1 class="text-lg font-extrabold flex items-center gap-1">🏰 元素城堡拼拼樂｜高中版</h1>
+        <p class="text-[10px] text-indigo-100">點選元素 → 輸入符號 → Enter確認！</p>
       </div>
-
-      <div class="text-right">
-        <div
-          id="progressDisplay"
-          class="text-3xl font-black tracking-tight drop-shadow-sm"
-        >
-          0/65
-        </div>
-        <button
-          onclick="askAIHint()"
-          class="mt-2 inline-flex items-center gap-1 text-[11px] md:text-xs bg-yellow-300 text-blue-900 px-3 py-1.5 rounded-full font-bold shadow-lg hover:bg-yellow-200 active:scale-95 transition"
-        >
-          ✨ 小提示 (離線版)
-        </button>
+      <div class="text-right flex items-center gap-2">
+        <div id="progressDisplay" class="text-2xl font-black">0/65</div>
+        <button onclick="askAIHint()" class="text-[10px] bg-yellow-300 text-indigo-900 px-2 py-1 rounded-full font-bold shadow">✨提示</button>
       </div>
     </header>
-
-    <!-- 中間：城堡格子＋飄浮元素 -->
     <main class="table-wrapper" id="tableArea">
-      <!-- 背景週期表格子 -->
       <div class="periodic-grid" id="ghostGrid"></div>
-
-      <!-- 元素卡片容器 -->
-      <div
-        id="blocksContainer"
-        class="absolute inset-0 w-[900px] h-[450px] mx-auto my-auto pointer-events-none"
-      ></div>
+      <div id="blocksContainer" class="absolute inset-0 w-[720px] h-[360px] mx-auto my-auto pointer-events-auto"></div>
     </main>
-
-    <!-- 底部：目前選擇＋輸入顯示＋按鈕 -->
-    <footer
-      class="bg-white px-4 md:px-6 py-3 border-t-4 border-slate-300 flex flex-col md:flex-row items-center gap-3 md:gap-4"
-    >
-      <div class="flex items-center gap-2 w-full md:w-auto">
-        <span class="text-sm md:text-base text-slate-500 font-semibold"
-          >目前選擇：</span
-        >
-        <span
-          id="currentSelection"
-          class="text-xl md:text-2xl font-extrabold text-blue-600 transition-all duration-200"
-          >請點選元素</span
-        >
-      </div>
-
-      <div
-        class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start"
-      >
-        <span class="text-sm md:text-base text-slate-500 font-semibold"
-          >輸入：</span
-        >
-        <div
-          id="inputDisplay"
-          class="bg-slate-100 px-5 py-2 rounded-xl text-3xl font-mono font-bold tracking-[0.6em] min-w-[120px] text-center border-4 border-blue-200 transition duration-100"
-        >
-          _
+    <footer class="bg-white px-3 py-3 border-t-2 border-slate-300">
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-slate-500 font-semibold">選擇：</span>
+          <span id="currentSelection" class="text-lg font-extrabold text-indigo-600">請點選元素</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-slate-500 font-semibold">輸入：</span>
+          <input type="text" id="mainInput" placeholder="_" maxlength="2" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" />
+        </div>
+        <div class="flex gap-2">
+          <button onclick="clearInput()" class="bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs font-bold py-2 px-3 rounded-full shadow transition">⌫ 清除</button>
+          <button onclick="checkAnswer()" class="bg-green-500 hover:bg-green-600 active:scale-95 text-white text-xs font-bold py-2 px-3 rounded-full shadow transition">✓ 確認</button>
+          <a href="index.html" class="bg-yellow-400 hover:bg-yellow-500 active:scale-95 text-yellow-900 text-xs font-bold py-2 px-3 rounded-full shadow transition flex items-center gap-1" title="回主頁"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
         </div>
       </div>
-
-      <div
-        class="flex flex-1 justify-end gap-2 w-full md:w-auto mt-1 md:mt-0"
-      >
-        <button
-          onclick="clearInput()"
-          class="flex-1 md:flex-none bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs md:text-sm font-bold py-2 px-4 rounded-full shadow-md transition inline-flex items-center justify-center gap-1"
-        >
-          ⌫ 清除 (Backspace)
-        </button>
-        <button
-          onclick="checkAnswer()"
-          class="flex-1 md:flex-none bg-green-500 hover:bg-green-600 active:scale-95 text-white text-xs md:text-sm font-bold py-2 px-4 rounded-full shadow-md transition inline-flex items-center justify-center gap-1"
-        >
-          確認 (Enter) ✓
-        </button>
-      </div>
+      <p class="text-center text-[10px] text-slate-400 mt-2">💡 電腦：直接打字 + Enter ｜ 手機/平板：點輸入框叫出鍵盤</p>
     </footer>
   </div>
-
-  <!-- 小提示 Modal -->
-  <div
-    id="aiModal"
-    class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50 px-4"
-  >
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 relative">
-      <button
-        onclick="closeAiModal()"
-        class="absolute top-2 right-3 text-slate-400 hover:text-slate-600 text-2xl leading-none"
-      >
-        &times;
-      </button>
-      <h3
-        class="text-lg md:text-xl font-bold text-blue-600 mb-3 flex items-center gap-2"
-      >
-        <span>🧪</span>
-        <span>高手小提醒</span>
-      </h3>
-      <div
-        id="aiContent"
-        class="ai-content text-slate-700 text-sm leading-relaxed min-h-[100px] max-h-[60vh] overflow-y-auto"
-      ></div>
+  <div id="aiModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50 px-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-5 relative">
+      <button onclick="closeAiModal()" class="absolute top-2 right-3 text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+      <h3 class="text-lg font-bold text-indigo-600 mb-3 flex items-center gap-2">🧪 高手小提醒</h3>
+      <div id="aiContent" class="text-slate-700 text-sm leading-relaxed min-h-[80px] max-h-[50vh] overflow-y-auto"></div>
     </div>
   </div>
-
-  <!-- 通關 Modal -->
-  <div
-    id="winModal"
-    class="hidden fixed inset-0 bg-blue-900/95 flex flex-col items-center justify-center z-50 text-white p-6"
-  >
-    <div
-      class="p-8 rounded-2xl bg-white/10 backdrop-blur-md text-center max-w-lg w-full border border-blue-200/40"
-    >
-      <h2 class="text-5xl md:text-6xl font-extrabold mb-4 text-yellow-300">
-        任務完成！
-      </h2>
-      <p class="text-xl md:text-2xl mb-8 font-light">
-        高中版元素城堡拼好啦，妳的化學底子超扎實 💪
-      </p>
-      <button
-        onclick="location.reload()"
-        class="bg-emerald-400 hover:bg-emerald-500 active:scale-95 text-white font-bold py-3 px-9 rounded-full text-lg shadow-xl"
-      >
-        再玩一次
-      </button>
+  <div id="winModal" class="hidden fixed inset-0 bg-indigo-900/95 flex flex-col items-center justify-center z-50 text-white p-6">
+    <div class="p-6 rounded-2xl bg-white/10 backdrop-blur-md text-center max-w-lg w-full border border-indigo-200/40">
+      <h2 class="text-4xl font-extrabold mb-4 text-yellow-300">🎉 任務完成！</h2>
+      <p class="text-lg mb-6">高中版元素城堡拼好啦，化學底子超扎實！</p>
+      <div class="flex gap-3 justify-center">
+        <a href="index.html" class="bg-yellow-400 hover:bg-yellow-500 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-lg">🏠 回主頁</a>
+        <button onclick="location.reload()" class="bg-emerald-400 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded-full shadow-lg">🔄 再玩一次</button>
+      </div>
     </div>
   </div>
-
-  <script>
-    // ===== 高中課綱常見 65 個元素 =====
-    const elements = [
-      // Period 1
-      { z: 1,  s: "H",  n: "氫", r: 1, c: 1,  color: "#f97373" },
-      { z: 2,  s: "He", n: "氦", r: 1, c: 18, color: "#38bdf8" },
-
-      // Period 2
-      { z: 3,  s: "Li", n: "鋰", r: 2, c: 1,  color: "#fb923c" },
-      { z: 4,  s: "Be", n: "鈹", r: 2, c: 2,  color: "#22c55e" },
-      { z: 5,  s: "B",  n: "硼", r: 2, c: 13, color: "#8b5cf6" },
-      { z: 6,  s: "C",  n: "碳", r: 2, c: 14, color: "#6b7280" },
-      { z: 7,  s: "N",  n: "氮", r: 2, c: 15, color: "#f97373" },
-      { z: 8,  s: "O",  n: "氧", r: 2, c: 16, color: "#f97373" },
-      { z: 9,  s: "F",  n: "氟", r: 2, c: 17, color: "#facc15" },
-      { z: 10, s: "Ne", n: "氖", r: 2, c: 18, color: "#38bdf8" },
-
-      // Period 3
-      { z: 11, s: "Na", n: "鈉", r: 3, c: 1,  color: "#fb923c" },
-      { z: 12, s: "Mg", n: "鎂", r: 3, c: 2,  color: "#22c55e" },
-      { z: 13, s: "Al", n: "鋁", r: 3, c: 13, color: "#a855f7" },
-      { z: 14, s: "Si", n: "矽", r: 3, c: 14, color: "#8b5cf6" },
-      { z: 15, s: "P",  n: "磷", r: 3, c: 15, color: "#facc15" },
-      { z: 16, s: "S",  n: "硫", r: 3, c: 16, color: "#facc15" },
-      { z: 17, s: "Cl", n: "氯", r: 3, c: 17, color: "#facc15" },
-      { z: 18, s: "Ar", n: "氬", r: 3, c: 18, color: "#38bdf8" },
-
-      // Period 4
-      { z: 19, s: "K",  n: "鉀", r: 4, c: 1,  color: "#fb923c" },
-      { z: 20, s: "Ca", n: "鈣", r: 4, c: 2,  color: "#22c55e" },
-      { z: 21, s: "Sc", n: "鈧", r: 4, c: 3,  color: "#9ca3af" },
-      { z: 22, s: "Ti", n: "鈦", r: 4, c: 4,  color: "#9ca3af" },
-      { z: 23, s: "V",  n: "釩", r: 4, c: 5,  color: "#9ca3af" },
-      { z: 24, s: "Cr", n: "鉻", r: 4, c: 6,  color: "#9ca3af" },
-      { z: 25, s: "Mn", n: "錳", r: 4, c: 7,  color: "#9ca3af" },
-      { z: 26, s: "Fe", n: "鐵", r: 4, c: 8,  color: "#9ca3af" },
-      { z: 27, s: "Co", n: "鈷", r: 4, c: 9,  color: "#9ca3af" },
-      { z: 28, s: "Ni", n: "鎳", r: 4, c: 10, color: "#9ca3af" },
-      { z: 29, s: "Cu", n: "銅", r: 4, c: 11, color: "#b45309" },
-      { z: 30, s: "Zn", n: "鋅", r: 4, c: 12, color: "#9ca3af" },
-      { z: 31, s: "Ga", n: "鎵", r: 4, c: 13, color: "#a855f7" },
-      { z: 32, s: "Ge", n: "鍺", r: 4, c: 14, color: "#8b5cf6" },
-      { z: 33, s: "As", n: "砷", r: 4, c: 15, color: "#facc15" },
-      { z: 34, s: "Se", n: "硒", r: 4, c: 16, color: "#facc15" },
-      { z: 35, s: "Br", n: "溴", r: 4, c: 17, color: "#f97316" },
-      { z: 36, s: "Kr", n: "氪", r: 4, c: 18, color: "#38bdf8" },
-
-      // Period 5
-      { z: 37, s: "Rb", n: "銣", r: 5, c: 1,  color: "#fb923c" },
-      { z: 38, s: "Sr", n: "鍶", r: 5, c: 2,  color: "#22c55e" },
-      { z: 39, s: "Y",  n: "釔", r: 5, c: 3,  color: "#9ca3af" },
-      { z: 40, s: "Zr", n: "鋯", r: 5, c: 4,  color: "#9ca3af" },
-      { z: 41, s: "Nb", n: "鈮", r: 5, c: 5,  color: "#9ca3af" },
-      { z: 42, s: "Mo", n: "鉬", r: 5, c: 6,  color: "#9ca3af" },
-      { z: 44, s: "Ru", n: "釕", r: 5, c: 8,  color: "#9ca3af" },
-      { z: 45, s: "Rh", n: "銠", r: 5, c: 9,  color: "#9ca3af" },
-      { z: 46, s: "Pd", n: "鈀", r: 5, c: 10, color: "#9ca3af" },
-      { z: 47, s: "Ag", n: "銀", r: 5, c: 11, color: "#b45309" },
-      { z: 48, s: "Cd", n: "鎘", r: 5, c: 12, color: "#9ca3af" },
-      { z: 49, s: "In", n: "銦", r: 5, c: 13, color: "#a855f7" },
-      { z: 50, s: "Sn", n: "錫", r: 5, c: 14, color: "#a855f7" },
-      { z: 51, s: "Sb", n: "銻", r: 5, c: 15, color: "#facc15" },
-      { z: 52, s: "Te", n: "碲", r: 5, c: 16, color: "#facc15" },
-      { z: 53, s: "I",  n: "碘", r: 5, c: 17, color: "#f97316" },
-      { z: 54, s: "Xe", n: "氙", r: 5, c: 18, color: "#38bdf8" },
-
-      // Period 6（不含鑭系，只收常見金屬）
-      { z: 55, s: "Cs", n: "銫", r: 6, c: 1,  color: "#fb923c" },
-      { z: 56, s: "Ba", n: "鋇", r: 6, c: 2,  color: "#22c55e" },
-      { z: 72, s: "Hf", n: "鉿", r: 6, c: 4,  color: "#9ca3af" },
-      { z: 73, s: "Ta", n: "鉭", r: 6, c: 5,  color: "#9ca3af" },
-      { z: 74, s: "W",  n: "鎢", r: 6, c: 6,  color: "#9ca3af" },
-      { z: 75, s: "Re", n: "錸", r: 6, c: 7,  color: "#9ca3af" },
-      { z: 76, s: "Os", n: "鋨", r: 6, c: 8,  color: "#9ca3af" },
-      { z: 77, s: "Ir", n: "銥", r: 6, c: 9,  color: "#9ca3af" },
-      { z: 78, s: "Pt", n: "鉑", r: 6, c: 10, color: "#9ca3af" },
-      { z: 79, s: "Au", n: "金", r: 6, c: 11, color: "#b45309" },
-      { z: 80, s: "Hg", n: "汞", r: 6, c: 12, color: "#9ca3af" },
-      { z: 82, s: "Pb", n: "鉛", r: 6, c: 14, color: "#a855f7" }
-    ];
-
-    // ===== 遊戲狀態 =====
-    let selectedElement = null;
-    let currentInput = "";
-    let solvedCount = 0;
-    const totalCount = elements.length;
-
-    let correctSynth, wrongSynth;
-
-    window.onload = () => {
-      setTimeout(() => {
-        initGrid();
-        initBlocks();
-        initAudio();
-        updateProgress();
-      }, 50);
-
-      document.addEventListener("keydown", handleGlobalKeydown);
-    };
-
-    // ===== 音效初始化 =====
-    function initAudio() {
-      if (Tone.context.state !== "running") {
-        const startAudio = () => {
-          Tone.start()
-            .then(() => {
-              document.documentElement.removeEventListener("mousedown", startAudio);
-              document.documentElement.removeEventListener("touchstart", startAudio);
-            })
-            .catch((e) => console.error("Audio 啟動失敗：", e));
-        };
-        document.documentElement.addEventListener("mousedown", startAudio, { once: true });
-        document.documentElement.addEventListener("touchstart", startAudio, { once: true });
-      }
-
-      correctSynth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "sine" },
-        envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.4 }
-      }).toDestination();
-
-      wrongSynth = new Tone.NoiseSynth({
-        noise: { type: "pink" },
-        envelope: { attack: 0.005, decay: 0.15, sustain: 0, release: 0.15 }
-      }).toDestination();
-    }
-
-    function playCorrect() {
-      if (Tone.context.state === "running" && correctSynth) {
-        correctSynth.triggerAttackRelease(["C5", "E5", "G5"], "8n");
-      }
-    }
-
-    function playWrong() {
-      if (Tone.context.state === "running" && wrongSynth) {
-        wrongSynth.triggerAttackRelease("16n");
-      }
-    }
-
-    // ===== 建立背景格子 =====
-    function initGrid() {
-      const grid = document.getElementById("ghostGrid");
-      grid.innerHTML = "";
-
-      const gridWidth = 900;
-      const gridHeight = 450;
-      grid.style.width = gridWidth + "px";
-      grid.style.height = gridHeight + "px";
-
-      for (let r = 1; r <= 7; r++) {
-        for (let c = 1; c <= 18; c++) {
-          const cell = document.createElement("div");
-          cell.className = "grid-cell";
-          cell.dataset.row = r;
-          cell.dataset.col = c;
-
-          const el = elements.find((e) => e.r === r && e.c === c);
-          if (el) {
-            cell.id = `slot-${el.s}`;
-            cell.innerHTML = `
-              <span class="z">${el.z}</span>
-              <span class="sym">${el.s}</span>
-            `;
-          } else if (r === 6 && c >= 3 && c <= 10) {
-            cell.innerHTML = "57–71";
-          } else if (r === 7 && c >= 3 && c <= 10) {
-            cell.innerHTML = "89–103";
-          } else {
-            cell.style.visibility = "hidden";
-          }
-
-          grid.appendChild(cell);
-        }
-      }
-
-      const blockContainer = document.getElementById("blocksContainer");
-      blockContainer.style.width = gridWidth + "px";
-      blockContainer.style.height = gridHeight + "px";
-    }
-
-    // ===== 建立飄浮元素卡片 =====
-    function initBlocks() {
-      const container = document.getElementById("blocksContainer");
-      container.innerHTML = "";
-
-      const containerWidth = 900;
-      const containerHeight = 450;
-      const padding = 60;
-
-      elements.forEach((el) => {
-        const block = document.createElement("div");
-        block.className = "floating-block pointer-events-auto";
-        block.id = `block-${el.s}`;
-        block.style.backgroundColor = el.color;
-        block.textContent = el.n;
-
-        const randTop =
-          Math.random() * (containerHeight - padding * 2) + padding;
-        const randLeft =
-          Math.random() * (containerWidth - padding * 2) + padding;
-        const randRot = Math.random() * 30 - 15;
-
-        block.style.top = randTop + "px";
-        block.style.left = randLeft + "px";
-        block.style.transform = `rotate(${randRot}deg)`;
-
-        block.onclick = () => selectBlock(el, block);
-        container.appendChild(block);
-      });
-    }
-
-    // ===== 選擇卡片 =====
-    function selectBlock(elData, blockDom) {
-      if (blockDom.classList.contains("solved")) return;
-
-      document
-        .querySelectorAll(".floating-block.selected")
-        .forEach((b) => b.classList.remove("selected"));
-
-      selectedElement = elData;
-      currentInput = "";
-      blockDom.classList.add("selected");
-
-      const label = document.getElementById("currentSelection");
-      label.textContent = elData.n;   // 只顯示中文名字
-      label.style.color = elData.color;
-
-      updateInputDisplay();
-
-      const tableWrapper = document.getElementById("tableArea");
-      const blockRect = blockDom.getBoundingClientRect();
-      const wrapperRect = tableWrapper.getBoundingClientRect();
-
-      const scrollLeft =
-        blockRect.left -
-        wrapperRect.left +
-        tableWrapper.scrollLeft -
-        wrapperRect.width / 2 +
-        blockRect.width / 2;
-      const scrollTop =
-        blockRect.top -
-        wrapperRect.top +
-        tableWrapper.scrollTop -
-        wrapperRect.height / 2 +
-        blockRect.height / 2;
-
-      tableWrapper.scrollTo({
-        left: scrollLeft,
-        top: scrollTop,
-        behavior: "smooth"
-      });
-    }
-
-    // ===== 鍵盤事件 =====
-    function handleGlobalKeydown(event) {
-      if (!document.getElementById("aiModal").classList.contains("hidden")) {
-        return;
-      }
-      if (!document.getElementById("winModal").classList.contains("hidden")) {
-        return;
-      }
-
-      const key = event.key;
-
-      if (key.length === 1 && /[a-zA-Z]/.test(key)) {
-        event.preventDefault();
-        handleKey(key.toUpperCase());
-      } else if (key === "Backspace" || key === "Delete") {
-        event.preventDefault();
-        clearInput();
-      } else if (key === "Enter") {
-        event.preventDefault();
-        checkAnswer();
-      }
-    }
-
-    function handleKey(char) {
-      if (!selectedElement) {
-        const label = document.getElementById("currentSelection");
-        label.classList.add("shake");
-        setTimeout(() => label.classList.remove("shake"), 250);
-        return;
-      }
-
-      const targetSym = selectedElement.s.toUpperCase();
-
-      if (currentInput.length < targetSym.length) {
-        currentInput += char;
-        updateInputDisplay();
-      }
-
-      if (
-        currentInput.length === targetSym.length &&
-        targetSym.length === 1
-      ) {
-        checkAnswer();
-      }
-    }
-
-    // ===== 檢查答案 =====
-    function checkAnswer() {
-      if (!selectedElement) return;
-
-      const targetSym = selectedElement.s.toUpperCase();
-      const display = document.getElementById("inputDisplay");
-
-      if (currentInput === targetSym) {
-        playCorrect();
-
-        const block = document.getElementById(`block-${selectedElement.s}`);
-        const slot = document.getElementById(`slot-${selectedElement.s}`);
-
-        const slotRect = slot.getBoundingClientRect();
-        const containerRect =
-          document.getElementById("blocksContainer").getBoundingClientRect();
-
-        const targetLeft = slotRect.left - containerRect.left;
-        const targetTop = slotRect.top - containerRect.top;
-
-        block.style.transform = "rotate(0deg) scale(1)";
-        block.style.left = targetLeft + "px";
-        block.style.top = targetTop + "px";
-        block.style.width = slotRect.width + "px";
-        block.style.height = slotRect.height + "px";
-
-        block.classList.remove("selected");
-        block.classList.add("solved");
-
-        block.innerHTML = `
-          <div class="flex flex-col items-center leading-none text-white">
-            <span class="text-[10px] opacity-80">${selectedElement.z}</span>
-            <span class="text-lg">${selectedElement.s}</span>
-          </div>
-        `;
-
-        selectedElement = null;
-        currentInput = "";
-        updateInputDisplay();
-
-        const label = document.getElementById("currentSelection");
-        label.textContent = "✅ 歸位成功！再選一個吧～";
-        label.style.color = "#16a34a";
-
-        solvedCount++;
-        updateProgress();
-
-        if (solvedCount === totalCount) {
-          setTimeout(
-            () =>
-              document
-                .getElementById("winModal")
-                .classList.remove("hidden"),
-            800
-          );
-        }
-      } else if (currentInput.length > 0) {
-        playWrong();
-        display.classList.add("shake", "text-red-600");
-
-        setTimeout(() => {
-          display.classList.remove("shake", "text-red-600");
-          currentInput = "";
-          updateInputDisplay();
-        }, 350);
-      }
-    }
-
-    function clearInput() {
-      currentInput = "";
-      updateInputDisplay();
-    }
-
-    function updateInputDisplay() {
-      const display = document.getElementById("inputDisplay");
-      const len = selectedElement ? selectedElement.s.length : 1;
-      let show = currentInput.padEnd(len, "_");
-
-      if (selectedElement) {
-        const targetSym = selectedElement.s.toUpperCase();
-        if (targetSym.startsWith(currentInput)) {
-          display.classList.remove("text-red-500");
-          display.classList.add("text-slate-800");
-        } else {
-          display.classList.add("text-red-500");
-          display.classList.remove("text-slate-800");
-        }
-      } else {
-        display.classList.remove("text-red-500", "text-slate-800");
-        display.classList.add("text-blue-600");
-      }
-
-      display.textContent = show.split("").join(" ");
-    }
-
-    function updateProgress() {
-      document.getElementById(
-        "progressDisplay"
-      ).textContent = `${solvedCount}/${totalCount}`;
-    }
-
-    // ===== 本地版小提示（不連網、不花額度） =====
-    function askAIHint() {
-      let target = selectedElement;
-
-      if (!target) {
-        const unsolved = elements.filter((e) => {
-          const b = document.getElementById(`block-${e.s}`);
-          return b && !b.classList.contains("solved");
-        });
-
-        if (unsolved.length === 0) {
-          showAiModal("妳已經全部拼好了！可以去挑戰全元素版囉 🌈", false);
-          return;
-        }
-
-        target = unsolved[Math.floor(Math.random() * unsolved.length)];
-        const b = document.getElementById(`block-${target.s}`);
-        if (b) selectBlock(target, b);
-      }
-
-      const hintHtml = `
-        <p class="text-base leading-relaxed">
-          👋 妳現在看的是：
-          <strong class="text-blue-700 text-lg">${target.n}</strong><br>
-          它的原子序是：
-          <strong class="text-green-600 text-lg">${target.z}</strong>。<br><br>
-          想像它在週期表的這一格，把顏色和位置一起記住，就更不會忘記符號 <strong>${target.s}</strong> 囉！
-        </p>
-      `;
-
-      showAiModal(hintHtml, false);
-    }
-
-    function showAiModal(content, isLoading) {
-      const modal = document.getElementById("aiModal");
-      const contentDiv = document.getElementById("aiContent");
-
-      modal.classList.remove("hidden");
-
-      if (isLoading) {
-        contentDiv.innerHTML = "";
-      } else {
-        contentDiv.innerHTML = content;
-      }
-    }
-
-    function closeAiModal() {
-      document.getElementById("aiModal").classList.add("hidden");
-    }
-  </script>
+<script>
+const elements = [
+  {z:1,s:"H",n:"氫",r:1,c:1,color:"#f97373"},{z:2,s:"He",n:"氦",r:1,c:18,color:"#38bdf8"},
+  {z:3,s:"Li",n:"鋰",r:2,c:1,color:"#fb923c"},{z:4,s:"Be",n:"鈹",r:2,c:2,color:"#22c55e"},
+  {z:5,s:"B",n:"硼",r:2,c:13,color:"#8b5cf6"},{z:6,s:"C",n:"碳",r:2,c:14,color:"#6b7280"},
+  {z:7,s:"N",n:"氮",r:2,c:15,color:"#f97373"},{z:8,s:"O",n:"氧",r:2,c:16,color:"#f97373"},
+  {z:9,s:"F",n:"氟",r:2,c:17,color:"#facc15"},{z:10,s:"Ne",n:"氖",r:2,c:18,color:"#38bdf8"},
+  {z:11,s:"Na",n:"鈉",r:3,c:1,color:"#fb923c"},{z:12,s:"Mg",n:"鎂",r:3,c:2,color:"#22c55e"},
+  {z:13,s:"Al",n:"鋁",r:3,c:13,color:"#a855f7"},{z:14,s:"Si",n:"矽",r:3,c:14,color:"#8b5cf6"},
+  {z:15,s:"P",n:"磷",r:3,c:15,color:"#facc15"},{z:16,s:"S",n:"硫",r:3,c:16,color:"#facc15"},
+  {z:17,s:"Cl",n:"氯",r:3,c:17,color:"#facc15"},{z:18,s:"Ar",n:"氬",r:3,c:18,color:"#38bdf8"},
+  {z:19,s:"K",n:"鉀",r:4,c:1,color:"#fb923c"},{z:20,s:"Ca",n:"鈣",r:4,c:2,color:"#22c55e"},
+  {z:21,s:"Sc",n:"鈧",r:4,c:3,color:"#9ca3af"},{z:22,s:"Ti",n:"鈦",r:4,c:4,color:"#9ca3af"},
+  {z:23,s:"V",n:"釩",r:4,c:5,color:"#9ca3af"},{z:24,s:"Cr",n:"鉻",r:4,c:6,color:"#9ca3af"},
+  {z:25,s:"Mn",n:"錳",r:4,c:7,color:"#9ca3af"},{z:26,s:"Fe",n:"鐵",r:4,c:8,color:"#9ca3af"},
+  {z:27,s:"Co",n:"鈷",r:4,c:9,color:"#9ca3af"},{z:28,s:"Ni",n:"鎳",r:4,c:10,color:"#9ca3af"},
+  {z:29,s:"Cu",n:"銅",r:4,c:11,color:"#b45309"},{z:30,s:"Zn",n:"鋅",r:4,c:12,color:"#9ca3af"},
+  {z:31,s:"Ga",n:"鎵",r:4,c:13,color:"#a855f7"},{z:32,s:"Ge",n:"鍺",r:4,c:14,color:"#8b5cf6"},
+  {z:33,s:"As",n:"砷",r:4,c:15,color:"#facc15"},{z:34,s:"Se",n:"硒",r:4,c:16,color:"#facc15"},
+  {z:35,s:"Br",n:"溴",r:4,c:17,color:"#f97316"},{z:36,s:"Kr",n:"氪",r:4,c:18,color:"#38bdf8"},
+  {z:37,s:"Rb",n:"銣",r:5,c:1,color:"#fb923c"},{z:38,s:"Sr",n:"鍶",r:5,c:2,color:"#22c55e"},
+  {z:39,s:"Y",n:"釔",r:5,c:3,color:"#9ca3af"},{z:40,s:"Zr",n:"鋯",r:5,c:4,color:"#9ca3af"},
+  {z:41,s:"Nb",n:"鈮",r:5,c:5,color:"#9ca3af"},{z:42,s:"Mo",n:"鉬",r:5,c:6,color:"#9ca3af"},
+  {z:44,s:"Ru",n:"釕",r:5,c:8,color:"#9ca3af"},{z:45,s:"Rh",n:"銠",r:5,c:9,color:"#9ca3af"},
+  {z:46,s:"Pd",n:"鈀",r:5,c:10,color:"#9ca3af"},{z:47,s:"Ag",n:"銀",r:5,c:11,color:"#b45309"},
+  {z:48,s:"Cd",n:"鎘",r:5,c:12,color:"#9ca3af"},{z:49,s:"In",n:"銦",r:5,c:13,color:"#a855f7"},
+  {z:50,s:"Sn",n:"錫",r:5,c:14,color:"#a855f7"},{z:51,s:"Sb",n:"銻",r:5,c:15,color:"#facc15"},
+  {z:52,s:"Te",n:"碲",r:5,c:16,color:"#facc15"},{z:53,s:"I",n:"碘",r:5,c:17,color:"#f97316"},
+  {z:54,s:"Xe",n:"氙",r:5,c:18,color:"#38bdf8"},{z:55,s:"Cs",n:"銫",r:6,c:1,color:"#fb923c"},
+  {z:56,s:"Ba",n:"鋇",r:6,c:2,color:"#22c55e"},{z:72,s:"Hf",n:"鉿",r:6,c:4,color:"#9ca3af"},
+  {z:73,s:"Ta",n:"鉭",r:6,c:5,color:"#9ca3af"},{z:74,s:"W",n:"鎢",r:6,c:6,color:"#9ca3af"},
+  {z:75,s:"Re",n:"錸",r:6,c:7,color:"#9ca3af"},{z:76,s:"Os",n:"鋨",r:6,c:8,color:"#9ca3af"},
+  {z:77,s:"Ir",n:"銥",r:6,c:9,color:"#9ca3af"},{z:78,s:"Pt",n:"鉑",r:6,c:10,color:"#9ca3af"},
+  {z:79,s:"Au",n:"金",r:6,c:11,color:"#b45309"},{z:80,s:"Hg",n:"汞",r:6,c:12,color:"#9ca3af"},
+  {z:82,s:"Pb",n:"鉛",r:6,c:14,color:"#a855f7"}
+];
+let selectedElement=null, solvedCount=0;
+const totalCount=elements.length;
+let correctSynth, wrongSynth;
+const mainInput = document.getElementById("mainInput");
+
+window.onload=()=>{
+  setTimeout(()=>{initGrid();initBlocks();initAudio();updateProgress();},50);
+};
+
+mainInput.addEventListener("input", (e) => {
+  let val = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+  if (selectedElement) val = val.slice(0, selectedElement.s.length);
+  else val = val.slice(0, 2);
+  e.target.value = val;
+  if (selectedElement && selectedElement.s.length === 1 && val.length === 1) checkAnswer();
+});
+
+mainInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); checkAnswer(); }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (document.activeElement === mainInput) return;
+  if (!document.getElementById("aiModal").classList.contains("hidden")) return;
+  if (!document.getElementById("winModal").classList.contains("hidden")) return;
+  const k = e.key;
+  if (k.length === 1 && /[a-zA-Z]/.test(k)) {
+    e.preventDefault(); mainInput.focus();
+    mainInput.value += k.toUpperCase();
+    mainInput.dispatchEvent(new Event("input"));
+  } else if (k === "Backspace" || k === "Delete") { e.preventDefault(); clearInput(); }
+  else if (k === "Enter") { e.preventDefault(); checkAnswer(); }
+});
+
+function initAudio(){
+  if(Tone.context.state!=="running"){
+    const start=()=>{Tone.start().then(()=>{document.removeEventListener("touchstart",start);document.removeEventListener("mousedown",start);});};
+    document.addEventListener("mousedown",start,{once:true});
+    document.addEventListener("touchstart",start,{once:true});
+  }
+  correctSynth=new Tone.PolySynth(Tone.Synth,{oscillator:{type:"sine"},envelope:{attack:0.01,decay:0.2,sustain:0.1,release:0.4}}).toDestination();
+  wrongSynth=new Tone.NoiseSynth({noise:{type:"pink"},envelope:{attack:0.005,decay:0.15,sustain:0,release:0.15}}).toDestination();
+}
+function playCorrect(){if(Tone.context.state==="running"&&correctSynth)correctSynth.triggerAttackRelease(["C5","E5","G5"],"8n");}
+function playWrong(){if(Tone.context.state==="running"&&wrongSynth)wrongSynth.triggerAttackRelease("16n");}
+
+function initGrid(){
+  const grid=document.getElementById("ghostGrid");grid.innerHTML="";
+  for(let r=1;r<=7;r++){for(let c=1;c<=18;c++){
+    const cell=document.createElement("div");cell.className="grid-cell";
+    const el=elements.find(e=>e.r===r&&e.c===c);
+    if(el){cell.id=`slot-${el.s}`;cell.innerHTML=`<span class="z">${el.z}</span><span class="sym">${el.s}</span>`;}
+    else if(r===6&&c===3)cell.innerHTML="57–71";
+    else if(r===7&&c>=3&&c<=10)cell.innerHTML="89–103";
+    else cell.style.visibility="hidden";
+    grid.appendChild(cell);
+  }}
+}
+
+function initBlocks(){
+  const container=document.getElementById("blocksContainer");container.innerHTML="";
+  const cW=720,cH=360,pad=40;
+  elements.forEach(el=>{
+    const block=document.createElement("div");block.className="floating-block pointer-events-auto";
+    block.id=`block-${el.s}`;block.style.backgroundColor=el.color;block.textContent=el.n;
+    block.style.top=(Math.random()*(cH-pad*2)+pad)+"px";
+    block.style.left=(Math.random()*(cW-pad*2)+pad)+"px";
+    block.style.transform=`rotate(${Math.random()*30-15}deg)`;
+    block.addEventListener("click",(e)=>{e.preventDefault();selectBlock(el,block);});
+    block.addEventListener("touchend",(e)=>{e.preventDefault();selectBlock(el,block);});
+    container.appendChild(block);
+  });
+}
+
+function selectBlock(elData,blockDom){
+  if(blockDom.classList.contains("solved"))return;
+  document.querySelectorAll(".floating-block.selected").forEach(b=>b.classList.remove("selected"));
+  selectedElement=elData;blockDom.classList.add("selected");
+  const label=document.getElementById("currentSelection");
+  label.textContent=elData.n;label.style.color=elData.color;
+  mainInput.value="";mainInput.maxLength=elData.s.length;
+  mainInput.placeholder="_".repeat(elData.s.length);
+  setTimeout(()=>{mainInput.focus();},100);
+}
+
+function checkAnswer(){
+  if(!selectedElement){document.getElementById("currentSelection").classList.add("shake");setTimeout(()=>document.getElementById("currentSelection").classList.remove("shake"),250);return;}
+  const targetSym=selectedElement.s.toUpperCase(),userInput=mainInput.value.toUpperCase();
+  if(userInput===targetSym){
+    playCorrect();
+    const block=document.getElementById(`block-${selectedElement.s}`),slot=document.getElementById(`slot-${selectedElement.s}`);
+    const slotRect=slot.getBoundingClientRect(),containerRect=document.getElementById("blocksContainer").getBoundingClientRect();
+    block.style.transform="rotate(0deg) scale(1)";
+    block.style.left=(slotRect.left-containerRect.left)+"px";
+    block.style.top=(slotRect.top-containerRect.top)+"px";
+    block.style.width=slotRect.width+"px";block.style.height=slotRect.height+"px";
+    block.classList.remove("selected");block.classList.add("solved");
+    block.innerHTML=`<div class="flex flex-col items-center leading-none text-white"><span class="text-[7px] opacity-80">${selectedElement.z}</span><span class="text-xs">${selectedElement.s}</span></div>`;
+    document.getElementById("currentSelection").textContent="✅ 歸位成功！";
+    document.getElementById("currentSelection").style.color="#16a34a";
+    selectedElement=null;mainInput.value="";mainInput.placeholder="_";mainInput.maxLength=2;
+    solvedCount++;updateProgress();
+    if(solvedCount===totalCount)setTimeout(()=>document.getElementById("winModal").classList.remove("hidden"),800);
+  }else if(userInput.length>0){
+    playWrong();mainInput.classList.add("shake");mainInput.style.borderColor="#ef4444";
+    setTimeout(()=>{mainInput.classList.remove("shake");mainInput.style.borderColor="#3b82f6";mainInput.value="";},350);
+  }
+}
+
+function clearInput(){mainInput.value="";mainInput.focus();}
+function updateProgress(){document.getElementById("progressDisplay").textContent=`${solvedCount}/${totalCount}`;}
+
+function askAIHint(){
+  let target=selectedElement;
+  if(!target){
+    const unsolved=elements.filter(e=>{const b=document.getElementById(`block-${e.s}`);return b&&!b.classList.contains("solved");});
+    if(unsolved.length===0){showAiModal("妳已經全部拼好了！超強的～ 🌟");return;}
+    target=unsolved[Math.floor(Math.random()*unsolved.length)];
+    const b=document.getElementById(`block-${target.s}`);if(b)selectBlock(target,b);
+  }
+  showAiModal(`<p class="text-base leading-relaxed">👋 小提示來囉！<br><br>妳選到的元素是：<strong class="text-indigo-700 text-lg">${target.n}</strong><br>他的原子序是：<strong class="text-green-600 text-lg">${target.z}</strong><br>符號是：<strong class="text-amber-600 text-lg">${target.s}</strong><br><br>找到週期表對應的位置放進去吧！</p>`);
+}
+
+function showAiModal(content){document.getElementById("aiModal").classList.remove("hidden");document.getElementById("aiContent").innerHTML=content;}
+function closeAiModal(){document.getElementById("aiModal").classList.add("hidden");}
+</script>
 </body>
 </html>
