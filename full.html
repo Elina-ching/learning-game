@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>元素城堡拼拼樂｜全元素版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+  <style>
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{font-family:system-ui,sans-serif;background:#fce7f3;margin:0;display:flex;justify-content:center;touch-action:manipulation;overflow:hidden;position:fixed;width:100%;height:100%}
+    #game-container{max-width:1100px;width:100%;height:100%;background:#fafafa;display:flex;flex-direction:column}
+    .table-wrapper{position:relative;flex-grow:1;overflow:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(135deg,#fdf2f8,#fce7f3);border-bottom:3px solid #f9a8d4}
+    .periodic-grid{display:grid;grid-template-columns:repeat(18,1fr);grid-template-rows:repeat(10,1fr);gap:1px;width:860px;height:480px;pointer-events:none;position:absolute;inset:0;margin:auto}
+    .grid-cell{border:1px dashed #e2e8f0;background:rgba(255,255,255,.6);border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:6px;color:#94a3b8;position:relative}
+    .grid-cell .z{position:absolute;top:0;left:1px;font-size:5px;opacity:.6}
+    .grid-cell .sym{font-size:9px;color:#cbd5e1}
+    .floating-block{position:absolute;width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;color:#fff;box-shadow:0 3px 8px rgba(0,0,0,.2);cursor:pointer;user-select:none;transition:transform .15s,box-shadow .15s,top .4s cubic-bezier(.34,1.56,.64,1),left .4s cubic-bezier(.34,1.56,.64,1),width .2s,height .2s;z-index:10}
+    .floating-block:active{transform:scale(.95)}
+    .floating-block.selected{border:2px solid #facc15;box-shadow:0 0 12px rgba(250,204,21,.9);transform:scale(1.1);z-index:40}
+    .floating-block.solved{border-radius:2px;box-shadow:inset 0 0 3px rgba(0,0,0,.3);pointer-events:none;z-index:5}
+    #mainInput{background:#f8fafc;border:2px solid #ec4899;border-radius:10px;padding:6px 12px;font-size:22px;font-family:monospace;font-weight:700;letter-spacing:.4em;text-align:center;width:100px;color:#1e293b;text-transform:uppercase}
+    #mainInput:focus{outline:none;border-color:#facc15;box-shadow:0 0 10px rgba(250,204,21,.5)}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-4px)}50%{transform:translateX(4px)}}.shake{animation:shake .2s}
+  </style>
+</head>
+<body>
+<div id="game-container">
+  <header class="bg-pink-600 text-white px-3 py-2 flex items-center justify-between">
+    <div><h1 class="text-sm font-bold">🏰 元素城堡｜全元素版 118</h1><p class="text-[8px] text-pink-200">點選→輸入符號→Enter</p></div>
+    <div class="flex items-center gap-2"><div id="progressDisplay" class="text-lg font-black">0/118</div><button onclick="askAIHint()" class="text-[8px] bg-yellow-300 text-pink-900 px-2 py-1 rounded-full font-bold">✨提示</button></div>
+  </header>
+  <main class="table-wrapper" id="tableArea">
+    <div class="periodic-grid" id="ghostGrid"></div>
+    <div id="blocksContainer" class="absolute inset-0 w-[860px] h-[480px] mx-auto my-auto pointer-events-auto"></div>
+  </main>
+  <footer class="bg-white px-2 py-2 border-t flex flex-wrap items-center justify-center gap-2">
+    <span class="text-xs text-slate-500">選擇：</span><span id="currentSelection" class="text-sm font-bold text-pink-600">請點選</span>
+    <input type="text" id="mainInput" placeholder="_" maxlength="2" autocomplete="off" autocapitalize="characters"/>
+    <button onclick="clearInput()" class="bg-red-500 text-white text-[10px] font-bold py-1 px-2 rounded-full">⌫</button>
+    <button onclick="checkAnswer()" class="bg-green-500 text-white text-[10px] font-bold py-1 px-2 rounded-full">✓</button>
+    <a href="index.html" class="bg-yellow-400 text-yellow-900 text-[10px] font-bold py-1 px-2 rounded-full flex items-center"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+  </footer>
+</div>
+<div id="aiModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-xl max-w-sm w-full p-4 relative">
+    <button onclick="closeAiModal()" class="absolute top-1 right-2 text-slate-400 text-xl">&times;</button>
+    <h3 class="text-base font-bold text-pink-600 mb-2">🧪 提示</h3>
+    <div id="aiContent" class="text-slate-700 text-sm"></div>
+  </div>
+</div>
+<div id="winModal" class="hidden fixed inset-0 bg-pink-900/95 flex items-center justify-center z-50 p-4">
+  <div class="bg-white/10 rounded-xl p-6 text-center text-white">
+    <h2 class="text-3xl font-bold text-yellow-300 mb-3">🎉 全部完成！</h2>
+    <p class="mb-4">118個元素都拼好了！</p>
+    <div class="flex gap-2 justify-center">
+      <a href="index.html" class="bg-yellow-400 text-pink-900 font-bold py-2 px-4 rounded-full">🏠主頁</a>
+      <button onclick="location.reload()" class="bg-emerald-400 text-white font-bold py-2 px-4 rounded-full">🔄再玩</button>
+    </div>
+  </div>
+</div>
+<script>
+const E=[
+[1,"H","氫",1,1,"#ef4444"],[2,"He","氦",1,18,"#38bdf8"],[3,"Li","鋰",2,1,"#f97316"],[4,"Be","鈹",2,2,"#22c55e"],[5,"B","硼",2,13,"#8b5cf6"],[6,"C","碳",2,14,"#6b7280"],[7,"N","氮",2,15,"#ef4444"],[8,"O","氧",2,16,"#ef4444"],[9,"F","氟",2,17,"#facc15"],[10,"Ne","氖",2,18,"#38bdf8"],
+[11,"Na","鈉",3,1,"#f97316"],[12,"Mg","鎂",3,2,"#22c55e"],[13,"Al","鋁",3,13,"#a855f7"],[14,"Si","矽",3,14,"#8b5cf6"],[15,"P","磷",3,15,"#facc15"],[16,"S","硫",3,16,"#facc15"],[17,"Cl","氯",3,17,"#facc15"],[18,"Ar","氬",3,18,"#38bdf8"],
+[19,"K","鉀",4,1,"#f97316"],[20,"Ca","鈣",4,2,"#22c55e"],[21,"Sc","鈧",4,3,"#fbbf24"],[22,"Ti","鈦",4,4,"#fbbf24"],[23,"V","釩",4,5,"#fbbf24"],[24,"Cr","鉻",4,6,"#fbbf24"],[25,"Mn","錳",4,7,"#fbbf24"],[26,"Fe","鐵",4,8,"#fbbf24"],[27,"Co","鈷",4,9,"#fbbf24"],[28,"Ni","鎳",4,10,"#fbbf24"],[29,"Cu","銅",4,11,"#fbbf24"],[30,"Zn","鋅",4,12,"#fbbf24"],[31,"Ga","鎵",4,13,"#a855f7"],[32,"Ge","鍺",4,14,"#8b5cf6"],[33,"As","砷",4,15,"#8b5cf6"],[34,"Se","硒",4,16,"#facc15"],[35,"Br","溴",4,17,"#f97316"],[36,"Kr","氪",4,18,"#38bdf8"],
+[37,"Rb","銣",5,1,"#f97316"],[38,"Sr","鍶",5,2,"#22c55e"],[39,"Y","釔",5,3,"#fbbf24"],[40,"Zr","鋯",5,4,"#fbbf24"],[41,"Nb","鈮",5,5,"#fbbf24"],[42,"Mo","鉬",5,6,"#fbbf24"],[43,"Tc","鎝",5,7,"#fbbf24"],[44,"Ru","釕",5,8,"#fbbf24"],[45,"Rh","銠",5,9,"#fbbf24"],[46,"Pd","鈀",5,10,"#fbbf24"],[47,"Ag","銀",5,11,"#fbbf24"],[48,"Cd","鎘",5,12,"#fbbf24"],[49,"In","銦",5,13,"#a855f7"],[50,"Sn","錫",5,14,"#a855f7"],[51,"Sb","銻",5,15,"#8b5cf6"],[52,"Te","碲",5,16,"#8b5cf6"],[53,"I","碘",5,17,"#f97316"],[54,"Xe","氙",5,18,"#38bdf8"],
+[55,"Cs","銫",6,1,"#f97316"],[56,"Ba","鋇",6,2,"#22c55e"],[72,"Hf","鉿",6,4,"#fbbf24"],[73,"Ta","鉭",6,5,"#fbbf24"],[74,"W","鎢",6,6,"#fbbf24"],[75,"Re","錸",6,7,"#fbbf24"],[76,"Os","鋨",6,8,"#fbbf24"],[77,"Ir","銥",6,9,"#fbbf24"],[78,"Pt","鉑",6,10,"#fbbf24"],[79,"Au","金",6,11,"#fbbf24"],[80,"Hg","汞",6,12,"#fbbf24"],[81,"Tl","鉈",6,13,"#a855f7"],[82,"Pb","鉛",6,14,"#a855f7"],[83,"Bi","鉍",6,15,"#a855f7"],[84,"Po","釙",6,16,"#8b5cf6"],[85,"At","砈",6,17,"#f97316"],[86,"Rn","氡",6,18,"#38bdf8"],
+[87,"Fr","鍅",7,1,"#f97316"],[88,"Ra","鐳",7,2,"#22c55e"],[104,"Rf","鑪",7,4,"#fbbf24"],[105,"Db","𨧀",7,5,"#fbbf24"],[106,"Sg","𨭎",7,6,"#fbbf24"],[107,"Bh","𨨏",7,7,"#fbbf24"],[108,"Hs","𨭆",7,8,"#fbbf24"],[109,"Mt","䥑",7,9,"#9ca3af"],[110,"Ds","鐽",7,10,"#9ca3af"],[111,"Rg","錀",7,11,"#9ca3af"],[112,"Cn","鎶",7,12,"#fbbf24"],[113,"Nh","鉨",7,13,"#9ca3af"],[114,"Fl","鈇",7,14,"#9ca3af"],[115,"Mc","鏌",7,15,"#9ca3af"],[116,"Lv","鉝",7,16,"#9ca3af"],[117,"Ts","鿬",7,17,"#9ca3af"],[118,"Og","鿌",7,18,"#38bdf8"],
+[57,"La","鑭",9,3,"#f472b6"],[58,"Ce","鈰",9,4,"#f472b6"],[59,"Pr","鐠",9,5,"#f472b6"],[60,"Nd","釹",9,6,"#f472b6"],[61,"Pm","鉕",9,7,"#f472b6"],[62,"Sm","釤",9,8,"#f472b6"],[63,"Eu","銪",9,9,"#f472b6"],[64,"Gd","釓",9,10,"#f472b6"],[65,"Tb","鋱",9,11,"#f472b6"],[66,"Dy","鏑",9,12,"#f472b6"],[67,"Ho","鈥",9,13,"#f472b6"],[68,"Er","鉺",9,14,"#f472b6"],[69,"Tm","銩",9,15,"#f472b6"],[70,"Yb","鐿",9,16,"#f472b6"],[71,"Lu","鎦",9,17,"#f472b6"],
+[89,"Ac","錒",10,3,"#c084fc"],[90,"Th","釷",10,4,"#c084fc"],[91,"Pa","鏷",10,5,"#c084fc"],[92,"U","鈾",10,6,"#c084fc"],[93,"Np","錼",10,7,"#c084fc"],[94,"Pu","鈽",10,8,"#c084fc"],[95,"Am","鎇",10,9,"#c084fc"],[96,"Cm","鋦",10,10,"#c084fc"],[97,"Bk","鉳",10,11,"#c084fc"],[98,"Cf","鉲",10,12,"#c084fc"],[99,"Es","鑀",10,13,"#c084fc"],[100,"Fm","鐨",10,14,"#c084fc"],[101,"Md","鍆",10,15,"#c084fc"],[102,"No","鍩",10,16,"#c084fc"],[103,"Lr","鐒",10,17,"#c084fc"]
+];
+const elements=E.map(e=>({z:e[0],s:e[1],n:e[2],r:e[3],c:e[4],color:e[5]}));
+let sel=null,solved=0;const total=118,inp=document.getElementById("mainInput");
+let cSynth,wSynth;
+
+window.onload=()=>{setTimeout(()=>{initGrid();initBlocks();initAudio();updProg();},50);};
+
+inp.addEventListener("input",e=>{let v=e.target.value.toUpperCase().replace(/[^A-Z]/g,"");v=v.slice(0,sel?sel.s.length:2);e.target.value=v;if(sel&&sel.s.length===1&&v.length===1)check();});
+inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();check();}});
+document.addEventListener("keydown",e=>{if(document.activeElement===inp)return;if(!document.getElementById("aiModal").classList.contains("hidden")||!document.getElementById("winModal").classList.contains("hidden"))return;const k=e.key;if(k.length===1&&/[a-zA-Z]/.test(k)){e.preventDefault();inp.focus();inp.value+=k.toUpperCase();inp.dispatchEvent(new Event("input"));}else if(k==="Backspace"){e.preventDefault();clr();}else if(k==="Enter"){e.preventDefault();check();}});
+
+function initAudio(){if(Tone.context.state!=="running"){const st=()=>{Tone.start();document.removeEventListener("touchstart",st);document.removeEventListener("mousedown",st);};document.addEventListener("mousedown",st,{once:1});document.addEventListener("touchstart",st,{once:1});}cSynth=new Tone.PolySynth(Tone.Synth).toDestination();wSynth=new Tone.NoiseSynth({envelope:{attack:.005,decay:.1,sustain:0,release:.1}}).toDestination();}
+function playC(){if(Tone.context.state==="running")cSynth.triggerAttackRelease(["C5","E5","G5"],"8n");}
+function playW(){if(Tone.context.state==="running")wSynth.triggerAttackRelease("16n");}
+
+function initGrid(){const g=document.getElementById("ghostGrid");g.innerHTML="";for(let r=1;r<=10;r++)for(let c=1;c<=18;c++){const cell=document.createElement("div");cell.className="grid-cell";const el=elements.find(x=>x.r===r&&x.c===c);if(el){cell.id=`slot-${el.s}`;cell.innerHTML=`<span class="z">${el.z}</span><span class="sym">${el.s}</span>`;}else if(r===6&&c===3)cell.innerHTML="<span style='font-size:4px'>57-71</span>";else if(r===7&&c===3)cell.innerHTML="<span style='font-size:4px'>89-103</span>";else cell.style.visibility="hidden";g.appendChild(cell);}}
+
+function initBlocks(){const con=document.getElementById("blocksContainer");con.innerHTML="";elements.forEach(el=>{const b=document.createElement("div");b.className="floating-block";b.id=`block-${el.s}`;b.style.backgroundColor=el.color;b.textContent=el.n;b.style.top=Math.random()*420+30+"px";b.style.left=Math.random()*800+30+"px";b.style.transform=`rotate(${Math.random()*24-12}deg)`;b.onclick=b.ontouchend=e=>{e.preventDefault();selBlock(el,b);};con.appendChild(b);});}
+
+function selBlock(el,b){if(b.classList.contains("solved"))return;document.querySelectorAll(".floating-block.selected").forEach(x=>x.classList.remove("selected"));sel=el;b.classList.add("selected");document.getElementById("currentSelection").textContent=el.n;document.getElementById("currentSelection").style.color=el.color;inp.value="";inp.maxLength=el.s.length;inp.placeholder="_".repeat(el.s.length);setTimeout(()=>inp.focus(),80);}
+
+function check(){if(!sel){document.getElementById("currentSelection").classList.add("shake");setTimeout(()=>document.getElementById("currentSelection").classList.remove("shake"),200);return;}const t=sel.s.toUpperCase(),u=inp.value.toUpperCase();if(u===t){playC();const b=document.getElementById(`block-${sel.s}`),slot=document.getElementById(`slot-${sel.s}`),sr=slot.getBoundingClientRect(),cr=document.getElementById("blocksContainer").getBoundingClientRect();b.style.transform="rotate(0)";b.style.left=sr.left-cr.left+"px";b.style.top=sr.top-cr.top+"px";b.style.width=sr.width+"px";b.style.height=sr.height+"px";b.classList.remove("selected");b.classList.add("solved");b.innerHTML=`<div class="flex flex-col items-center text-white text-[6px]"><span>${sel.z}</span><span class="text-[8px]">${sel.s}</span></div>`;document.getElementById("currentSelection").textContent="✅成功";document.getElementById("currentSelection").style.color="#16a34a";sel=null;inp.value="";inp.placeholder="_";inp.maxLength=2;solved++;updProg();if(solved===total)setTimeout(()=>document.getElementById("winModal").classList.remove("hidden"),600);}else if(u.length){playW();inp.classList.add("shake");inp.style.borderColor="#ef4444";setTimeout(()=>{inp.classList.remove("shake");inp.style.borderColor="#ec4899";inp.value="";},300);}}
+
+function clr(){inp.value="";inp.focus();}
+function updProg(){document.getElementById("progressDisplay").textContent=`${solved}/${total}`;}
+function askAIHint(){let t=sel;if(!t){const uns=elements.filter(e=>!document.getElementById(`block-${e.s}`).classList.contains("solved"));if(!uns.length){showAI("全部完成了！🎉");return;}t=uns[Math.floor(Math.random()*uns.length)];selBlock(t,document.getElementById(`block-${t.s}`));}showAI(`<p>元素：<b class="text-pink-600">${t.n}</b><br>原子序：<b class="text-green-600">${t.z}</b><br>符號：<b class="text-amber-600">${t.s}</b></p>`);}
+function showAI(c){document.getElementById("aiModal").classList.remove("hidden");document.getElementById("aiContent").innerHTML=c;}
+function closeAiModal(){document.getElementById("aiModal").classList.add("hidden");}
+</script>
+</body>
+</html>
