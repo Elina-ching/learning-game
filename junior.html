@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>元素城堡拼拼樂｜國中版</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap");
@@ -87,23 +86,17 @@
     }
     .home-btn:active { transform: scale(0.92); }
     .home-btn svg { width: 26px; height: 26px; fill: #fff; }
-    .virtual-keyboard {
-      display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px;
-      padding: 8px; background: #e2e8f0; border-top: 2px solid #cbd5e1;
+    #mainInput {
+      background: #f1f5f9; border: 3px solid #3b82f6;
+      border-radius: 12px; padding: 8px 16px;
+      font-size: 28px; font-family: monospace; font-weight: 700;
+      letter-spacing: 0.5em; text-align: center;
+      min-width: 100px; max-width: 140px;
+      color: #1e293b; caret-color: #3b82f6;
+      text-transform: uppercase;
     }
-    .vk-key {
-      background: #fff; border: 1px solid #94a3b8;
-      border-radius: 8px; padding: 10px 0;
-      font-size: 18px; font-weight: 700; color: #1e293b;
-      text-align: center; cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      transition: background 0.1s, transform 0.1s;
-    }
-    .vk-key:active { background: #dbeafe; transform: scale(0.95); }
-    .vk-key.action { background: #3b82f6; color: #fff; font-size: 14px; }
-    .vk-key.action:active { background: #2563eb; }
-    .vk-key.del { background: #ef4444; color: #fff; }
-    .vk-key.del:active { background: #dc2626; }
+    #mainInput:focus { outline: none; border-color: #facc15; box-shadow: 0 0 12px rgba(250,204,21,0.5); }
+    #mainInput::placeholder { color: #94a3b8; letter-spacing: 0.3em; }
     @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
     .shake { animation: shake 0.24s ease-in-out; }
     .dot-flashing {
@@ -118,17 +111,20 @@
     .dot-flashing::before { left: -15px; animation: dot-flashing 1s infinite alternate; animation-delay: 0s; }
     .dot-flashing::after { left: 15px; animation: dot-flashing 1s infinite alternate; animation-delay: 1s; }
     @keyframes dot-flashing { 0%{background-color:#2563eb} 50%,100%{background-color:rgba(37,99,235,0.2)} }
+    @media (max-width: 600px) {
+      .periodic-grid, #blocksContainer { width: 540px; height: 270px; }
+      .floating-block { width: 32px; height: 32px; font-size: 12px; border-radius: 8px; }
+      #mainInput { font-size: 22px; padding: 6px 12px; min-width: 80px; }
+    }
   </style>
 </head>
 <body>
-  <a href="index.html" class="home-btn" title="回主頁">
-    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-  </a>
+  
   <div id="game-container">
     <header class="bg-blue-600 text-white px-4 py-3 flex items-center justify-between shadow-md">
       <div class="pl-10">
         <h1 class="text-lg font-extrabold flex items-center gap-1">🏰 元素城堡拼拼樂</h1>
-        <p class="text-[10px] text-blue-100">點選元素 → 輸入符號 → 確認！</p>
+        <p class="text-[10px] text-blue-100">點選元素 → 輸入符號 → Enter確認！</p>
       </div>
       <div class="text-right flex items-center gap-2">
         <div id="progressDisplay" class="text-2xl font-black">0/24</div>
@@ -139,19 +135,24 @@
       <div class="periodic-grid" id="ghostGrid"></div>
       <div id="blocksContainer" class="absolute inset-0 w-[720px] h-[360px] mx-auto my-auto pointer-events-auto"></div>
     </main>
-    <footer class="bg-white px-3 py-2 border-t-2 border-slate-300">
-      <div class="flex items-center justify-between gap-2 mb-2">
-        <div class="flex items-center gap-1">
-          <span class="text-xs text-slate-500 font-semibold">選擇：</span>
-          <span id="currentSelection" class="text-base font-extrabold text-blue-600">請點選元素</span>
+    <footer class="bg-white px-3 py-3 border-t-2 border-slate-300">
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-slate-500 font-semibold">選擇：</span>
+          <span id="currentSelection" class="text-lg font-extrabold text-blue-600">請點選元素</span>
         </div>
-        <div class="flex items-center gap-1">
-          <span class="text-xs text-slate-500 font-semibold">輸入：</span>
-          <div id="inputDisplay" class="bg-slate-100 px-3 py-1 rounded-lg text-2xl font-mono font-bold tracking-[0.4em] min-w-[80px] text-center border-2 border-blue-200">_</div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-slate-500 font-semibold">輸入：</span>
+          <input type="text" id="mainInput" placeholder="_" maxlength="2" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" />
+        </div>
+        <div class="flex gap-2">
+          <button onclick="clearInput()" class="bg-red-500 hover:bg-red-600 active:scale-95 text-white text-xs font-bold py-2 px-3 rounded-full shadow transition">⌫ 清除</button>
+          <button onclick="checkAnswer()" class="bg-green-500 hover:bg-green-600 active:scale-95 text-white text-xs font-bold py-2 px-3 rounded-full shadow transition">✓ 確認</button>
+          <a href="index.html" class="bg-yellow-400 hover:bg-yellow-500 active:scale-95 text-yellow-900 text-xs font-bold py-2 px-3 rounded-full shadow transition flex items-center gap-1" title="回主頁"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
         </div>
       </div>
+      <p class="text-center text-[10px] text-slate-400 mt-2">💡 電腦：直接打字 + Enter ｜ 手機/平板：點輸入框叫出鍵盤</p>
     </footer>
-    <div class="virtual-keyboard" id="virtualKeyboard"></div>
   </div>
   <div id="aiModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50 px-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-5 relative">
@@ -189,14 +190,58 @@ const elements = [
   {z:29,s:"Cu",n:"銅",r:4,c:11,color:"#b45309"},{z:30,s:"Zn",n:"鋅",r:4,c:12,color:"#9ca3af"},
   {z:35,s:"Br",n:"溴",r:4,c:17,color:"#78350f"},{z:53,s:"I",n:"碘",r:5,c:17,color:"#5b21b6"}
 ];
-let selectedElement=null, currentInput="", solvedCount=0;
+let selectedElement=null, solvedCount=0;
 const totalCount=elements.length;
 let correctSynth, wrongSynth;
+const mainInput = document.getElementById("mainInput");
 
 window.onload=()=>{
-  setTimeout(()=>{initGrid();initBlocks();initAudio();initVirtualKeyboard();updateProgress();},50);
-  document.addEventListener("keydown",handleGlobalKeydown);
+  setTimeout(()=>{initGrid();initBlocks();initAudio();updateProgress();},50);
 };
+
+// 輸入框事件
+mainInput.addEventListener("input", (e) => {
+  let val = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+  if (selectedElement) {
+    val = val.slice(0, selectedElement.s.length);
+  } else {
+    val = val.slice(0, 2);
+  }
+  e.target.value = val;
+  
+  // 單字母元素自動確認
+  if (selectedElement && selectedElement.s.length === 1 && val.length === 1) {
+    checkAnswer();
+  }
+});
+
+mainInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    checkAnswer();
+  }
+});
+
+// 電腦版：全域鍵盤監聽（當輸入框沒 focus 時也能打字）
+document.addEventListener("keydown", (e) => {
+  if (document.activeElement === mainInput) return;
+  if (!document.getElementById("aiModal").classList.contains("hidden")) return;
+  if (!document.getElementById("winModal").classList.contains("hidden")) return;
+  
+  const k = e.key;
+  if (k.length === 1 && /[a-zA-Z]/.test(k)) {
+    e.preventDefault();
+    mainInput.focus();
+    mainInput.value += k.toUpperCase();
+    mainInput.dispatchEvent(new Event("input"));
+  } else if (k === "Backspace" || k === "Delete") {
+    e.preventDefault();
+    clearInput();
+  } else if (k === "Enter") {
+    e.preventDefault();
+    checkAnswer();
+  }
+});
 
 function initAudio(){
   if(Tone.context.state!=="running"){
@@ -232,84 +277,83 @@ function initBlocks(){
     block.style.top=(Math.random()*(cH-pad*2)+pad)+"px";
     block.style.left=(Math.random()*(cW-pad*2)+pad)+"px";
     block.style.transform=`rotate(${Math.random()*30-15}deg)`;
-    block.onclick=()=>selectBlock(el,block);
-    block.ontouchend=(e)=>{e.preventDefault();selectBlock(el,block);};
+    block.addEventListener("click", (e) => { e.preventDefault(); selectBlock(el, block); });
+    block.addEventListener("touchend", (e) => { e.preventDefault(); selectBlock(el, block); });
     container.appendChild(block);
   });
 }
 
-function initVirtualKeyboard(){
-  const kb=document.getElementById("virtualKeyboard");
-  const keys=["Q","W","E","R","T","Y","U","I","O","P","A","S","D","F","G","H","J","K","L","⌫","Z","X","C","V","B","N","M","","","✓"];
-  keys.forEach(k=>{
-    if(k===""){const sp=document.createElement("div");kb.appendChild(sp);return;}
-    const btn=document.createElement("button");btn.className="vk-key";btn.textContent=k;
-    if(k==="⌫"){btn.classList.add("del");btn.onclick=()=>clearInput();}
-    else if(k==="✓"){btn.classList.add("action");btn.textContent="確認";btn.onclick=()=>checkAnswer();}
-    else btn.onclick=()=>handleKey(k);
-    kb.appendChild(btn);
-  });
-}
-
-function selectBlock(elData,blockDom){
-  if(blockDom.classList.contains("solved"))return;
+function selectBlock(elData, blockDom){
+  if(blockDom.classList.contains("solved")) return;
   document.querySelectorAll(".floating-block.selected").forEach(b=>b.classList.remove("selected"));
-  selectedElement=elData;currentInput="";blockDom.classList.add("selected");
-  const label=document.getElementById("currentSelection");label.textContent=elData.n;label.style.color=elData.color;
-  updateInputDisplay();
-}
-
-function handleGlobalKeydown(e){
-  if(!document.getElementById("aiModal").classList.contains("hidden"))return;
-  if(!document.getElementById("winModal").classList.contains("hidden"))return;
-  const k=e.key;
-  if(k.length===1&&/[a-zA-Z]/.test(k)){e.preventDefault();handleKey(k.toUpperCase());}
-  else if(k==="Backspace"||k==="Delete"){e.preventDefault();clearInput();}
-  else if(k==="Enter"){e.preventDefault();checkAnswer();}
-}
-
-function handleKey(char){
-  if(!selectedElement){document.getElementById("currentSelection").classList.add("shake");setTimeout(()=>document.getElementById("currentSelection").classList.remove("shake"),250);return;}
-  const targetSym=selectedElement.s.toUpperCase();
-  if(currentInput.length<targetSym.length){currentInput+=char;updateInputDisplay();}
-  if(currentInput.length===targetSym.length&&targetSym.length===1)checkAnswer();
+  selectedElement = elData;
+  blockDom.classList.add("selected");
+  
+  const label = document.getElementById("currentSelection");
+  label.textContent = elData.n;
+  label.style.color = elData.color;
+  
+  // 清空輸入並 focus
+  mainInput.value = "";
+  mainInput.maxLength = elData.s.length;
+  mainInput.placeholder = "_".repeat(elData.s.length);
+  
+  // 手機/平板：自動 focus 叫出鍵盤
+  setTimeout(() => { mainInput.focus(); }, 100);
 }
 
 function checkAnswer(){
-  if(!selectedElement)return;
-  const targetSym=selectedElement.s.toUpperCase(),display=document.getElementById("inputDisplay");
-  if(currentInput===targetSym){
+  if(!selectedElement) {
+    document.getElementById("currentSelection").classList.add("shake");
+    setTimeout(()=>document.getElementById("currentSelection").classList.remove("shake"),250);
+    return;
+  }
+  
+  const targetSym = selectedElement.s.toUpperCase();
+  const userInput = mainInput.value.toUpperCase();
+  
+  if(userInput === targetSym){
     playCorrect();
-    const block=document.getElementById(`block-${selectedElement.s}`),slot=document.getElementById(`slot-${selectedElement.s}`);
-    const slotRect=slot.getBoundingClientRect(),containerRect=document.getElementById("blocksContainer").getBoundingClientRect();
+    const block=document.getElementById(`block-${selectedElement.s}`);
+    const slot=document.getElementById(`slot-${selectedElement.s}`);
+    const slotRect=slot.getBoundingClientRect();
+    const containerRect=document.getElementById("blocksContainer").getBoundingClientRect();
+    
     block.style.transform="rotate(0deg) scale(1)";
     block.style.left=(slotRect.left-containerRect.left)+"px";
     block.style.top=(slotRect.top-containerRect.top)+"px";
-    block.style.width=slotRect.width+"px";block.style.height=slotRect.height+"px";
-    block.classList.remove("selected");block.classList.add("solved");
+    block.style.width=slotRect.width+"px";
+    block.style.height=slotRect.height+"px";
+    block.classList.remove("selected");
+    block.classList.add("solved");
     block.innerHTML=`<div class="flex flex-col items-center leading-none text-white"><span class="text-[8px] opacity-80">${selectedElement.z}</span><span class="text-sm">${selectedElement.s}</span></div>`;
-    selectedElement=null;currentInput="";updateInputDisplay();
+    
     document.getElementById("currentSelection").textContent="✅ 歸位成功！";
     document.getElementById("currentSelection").style.color="#16a34a";
-    solvedCount++;updateProgress();
-    if(solvedCount===totalCount)setTimeout(()=>document.getElementById("winModal").classList.remove("hidden"),800);
-  }else if(currentInput.length>0){
-    playWrong();display.classList.add("shake","text-red-600");
-    setTimeout(()=>{display.classList.remove("shake","text-red-600");currentInput="";updateInputDisplay();},350);
+    
+    selectedElement=null;
+    mainInput.value="";
+    mainInput.placeholder="_";
+    mainInput.maxLength=2;
+    
+    solvedCount++;
+    updateProgress();
+    if(solvedCount===totalCount) setTimeout(()=>document.getElementById("winModal").classList.remove("hidden"),800);
+  } else if(userInput.length > 0){
+    playWrong();
+    mainInput.classList.add("shake");
+    mainInput.style.borderColor="#ef4444";
+    setTimeout(()=>{
+      mainInput.classList.remove("shake");
+      mainInput.style.borderColor="#3b82f6";
+      mainInput.value="";
+    },350);
   }
 }
 
-function clearInput(){currentInput="";updateInputDisplay();}
-
-function updateInputDisplay(){
-  const display=document.getElementById("inputDisplay"),len=selectedElement?selectedElement.s.length:1;
-  let show=currentInput.padEnd(len,"_");
-  if(selectedElement){
-    const t=selectedElement.s.toUpperCase();
-    if(t.startsWith(currentInput)){display.classList.remove("text-red-500");display.classList.add("text-slate-800");}
-    else{display.classList.add("text-red-500");display.classList.remove("text-slate-800");}
-  }else{display.classList.remove("text-red-500","text-slate-800");display.classList.add("text-blue-600");}
-  display.textContent=show.split("").join(" ");
+function clearInput(){
+  mainInput.value="";
+  mainInput.focus();
 }
 
 function updateProgress(){document.getElementById("progressDisplay").textContent=`${solvedCount}/${totalCount}`;}
@@ -318,22 +362,21 @@ function askAIHint(){
   let target=selectedElement;
   if(!target){
     const unsolved=elements.filter(e=>{const b=document.getElementById(`block-${e.s}`);return b&&!b.classList.contains("solved");});
-    if(unsolved.length===0){showAiModal("妳已經全部拼好了！太強啦～ 🌟",false);return;}
+    if(unsolved.length===0){showAiModal("妳已經全部拼好了！太強啦～ 🌟");return;}
     target=unsolved[Math.floor(Math.random()*unsolved.length)];
     const b=document.getElementById(`block-${target.s}`);if(b)selectBlock(target,b);
   }
-  showAiModal(`<p class="text-base leading-relaxed">👋 小提示來囉！<br><br>妳選到的元素是：<strong class="text-blue-700 text-lg">${target.n}</strong><br>他的原子序是：<strong class="text-green-600 text-lg">${target.z}</strong><br><br>再看一下位置，就能把它放回正確的城堡房間囉！</p>`,false);
+  showAiModal(`<p class="text-base leading-relaxed">👋 小提示來囉！<br><br>妳選到的元素是：<strong class="text-blue-700 text-lg">${target.n}</strong><br>他的原子序是：<strong class="text-green-600 text-lg">${target.z}</strong><br><br>再看一下位置，就能把它放回正確的城堡房間囉！</p>`);
 }
 
-function showAiModal(content,isLoading){
-  const modal=document.getElementById("aiModal"),contentDiv=document.getElementById("aiContent"),loadingDiv=document.getElementById("aiLoading");
+function showAiModal(content){
+  const modal=document.getElementById("aiModal");
+  const contentDiv=document.getElementById("aiContent");
   modal.classList.remove("hidden");
-  if(isLoading){contentDiv.classList.add("hidden");loadingDiv.classList.remove("hidden");contentDiv.innerHTML="";}
-  else{contentDiv.classList.remove("hidden");loadingDiv.classList.add("hidden");contentDiv.innerHTML=content;}
+  contentDiv.innerHTML=content;
 }
 function closeAiModal(){document.getElementById("aiModal").classList.add("hidden");}
 </script>
 </body>
 </html>
-
     
