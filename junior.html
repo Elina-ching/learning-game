@@ -236,6 +236,14 @@
         class="absolute inset-0 w-[900px] h-[450px] mx-auto my-auto pointer-events-auto"
       ></div>
     </main>
+   <!-- 隱藏輸入框：手機/平板用來呼叫鍵盤 -->
+<input 
+  id="hiddenInput"
+  type="text"
+  class="opacity-0 absolute pointer-events-none"
+  autocapitalize="characters"
+  autocomplete="off"
+/>
 
     <!-- 底部：目前選擇＋輸入顯示＋按鈕 -->
     <footer
@@ -540,6 +548,10 @@
       label.style.color = elData.color;
 
       updateInputDisplay();
+      // 叫出行動裝置鍵盤
+      setTimeout(() => {
+      document.getElementById("hiddenInput").focus(); 
+      }, 50);
 
       const tableWrapper = document.getElementById("tableArea");
       const blockRect = blockDom.getBoundingClientRect();
@@ -678,12 +690,18 @@
         }, 350);
       }
     }
+    setTimeout(() => {
+  document.getElementById("hiddenInput").focus();
+}, 50);
 
     function clearInput() {
       currentInput = "";
       updateInputDisplay();
     }
-
+      
+    setTimeout(() => {
+  document.getElementById("hiddenInput").focus();
+}, 50);
     function updateInputDisplay() {
       const display = document.getElementById("inputDisplay");
       const len = selectedElement ? selectedElement.s.length : 1;
@@ -805,6 +823,18 @@ function askAIHint() {
     function closeAiModal() {
       document.getElementById("aiModal").classList.add("hidden");
     }
+   // 監聽手機鍵盤輸入
+document.getElementById("hiddenInput").addEventListener("input", (e) => {
+  if (!selectedElement) return;
+
+  const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+  e.target.value = ""; // 清空 input
+
+  for (const ch of val) {
+    handleKey(ch); // 原本的邏輯照用
+  }
+});
+
   </script>
 
 </html>
